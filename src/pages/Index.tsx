@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTheme } from "next-themes";
 import {
   ArrowLeftRight,
   Award,
@@ -31,7 +32,10 @@ import {
   Volume2,
   Zap,
   X,
+  Settings as SettingsIcon,
 } from "lucide-react";
+import { useSettings } from "@/contexts/SettingsContext";
+import { SettingsDialog } from "@/components/SettingsDialog";
 
 const initialDecks = [
   { name: "Physics Formulas", cards: 42, progress: 72, color: "bg-study-front" },
@@ -86,13 +90,14 @@ const learningPath = [
 ];
 
 const Index = () => {
-  const [darkMode, setDarkMode] = useState(false);
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { settings } = useSettings();
   const [flipped, setFlipped] = useState(false);
   const [showSafety, setShowSafety] = useState(false);
   const [decks, setDecks] = useState(initialDecks);
   const [cards, setCards] = useState(initialCards);
-  const [selectedDeck, setSelectedDeck] = useState(initialDecks[0].name);
-  const [selectedCardId, setSelectedCardId] = useState(initialCards[0].id);
+  const [selectedDeck, setSelectedDeck] = useState(initialDecks[0]?.name ?? "");
+  const [selectedCardId, setSelectedCardId] = useState(initialCards[0]?.id ?? 0);
   const [searchTerm, setSearchTerm] = useState("");
   const [sessionCount, setSessionCount] = useState(12);
   const [streak, setStreak] = useState(9);
@@ -102,19 +107,15 @@ const Index = () => {
   const [history, setHistory] = useState<typeof initialCards>(initialCards);
   const [redoStack, setRedoStack] = useState<typeof initialCards>([]);
 
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", darkMode);
-  }, [darkMode]);
-
-  const selectedCard = cards.find((card) => card.id === selectedCardId) ?? cards[0];
-  const selectedTemplate = selectedCard?.template ?? "Formula";
+  const selectedCard = cards.find((card) => card.id === selectedCardId) ?? cards[0] ?? null;
+  const selectedTemplate = selectedCard?.template ?? settings.newCardTemplate;
 
   const filteredDecks = useMemo(
     () => decks.filter((deck) => deck.name.toLowerCase().includes(searchTerm.toLowerCase())),
     [decks, searchTerm],
   );
 
-  const activeDeck = decks.find((deck) => deck.name === selectedDeck) ?? decks[0];
+  const activeDeck = decks.find((deck) => deck.name === selectedDeck) ?? decks[0] ?? null;
   const deckCards = useMemo(() => cards.filter((card) => card.deck === selectedDeck), [cards, selectedDeck]);
   const masteryOffset = 158 - (158 * (activeDeck?.progress ?? 0)) / 100;
 
@@ -141,10 +142,10 @@ const Index = () => {
     const newCard = {
       id: nextId,
       deck: selectedDeck,
-      template: selectedTemplate,
+      template: settings.newCardTemplate,
       front: "New flashcard question",
       back: "Add the answer, example, or equation here.",
-      tag: selectedDeck.split(" ")[0].toLowerCase(),
+      tag: settings.newCardTag || selectedDeck.split(" ")[0].toLowerCase(),
     };
 
     rememberState();
@@ -220,7 +221,7 @@ const Index = () => {
 
   const markStudy = (known: boolean) => {
     setFlipped(false);
-    setSessionCount((count) => Math.min(18, count + 1));
+    setSessionCount((count) => Math.min(settings.studySessionLength, count + 1));
     setDueToday((count) => Math.max(0, count - 1));
     setRetention((value) => Math.min(99, value + (known ? 1 : 0)));
     setStreak((value) => (known ? value : Math.max(1, value)));
@@ -248,13 +249,16 @@ const Index = () => {
                 <h1 className="font-display text-2xl font-bold leading-none text-foreground">Micro-Learn</h1>
               </div>
             </div>
-            <button
-              aria-label="Toggle high contrast theme"
-              onClick={() => setDarkMode((value) => !value)}
-              className="rounded-md border border-border bg-card p-2 text-muted-foreground transition hover:scale-105 hover:text-primary"
-            >
-              {darkMode ? <Sun className="size-4" /> : <Moon className="size-4" />}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                aria-label="Toggle high contrast theme"
+                onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+                className="rounded-md border border-border bg-card p-2 text-muted-foreground transition hover:scale-105 hover:text-primary"
+              >
+                {resolvedTheme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+              </button>
+              <SettingsDialog />
+            </div>
           </div>
 
           <label className="mt-7 flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 shadow-card">
@@ -278,9 +282,8 @@ const Index = () => {
               <button
                 key={deck.name}
                 onClick={() => selectDeck(deck.name)}
-                className={`group w-full rounded-md border p-3 text-left shadow-card transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-soft ${
-                  selectedDeck === deck.name ? "border-primary bg-secondary" : "border-border bg-card"
-                }`}
+                className={`group w-full rounded-md border p-3 text-left shadow-card transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-soft ${selectedDeck === deck.name ? "border-primary bg-secondary" : "border-border bg-card"
+                  }`}
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
@@ -334,26 +337,26 @@ const Index = () => {
           <header className="relative overflow-hidden rounded-md border border-border bg-card/85 p-4 shadow-soft backdrop-blur-xl">
             <div className="absolute inset-x-0 top-0 h-1 bg-gradient-primary" />
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="inline-flex items-center gap-2 rounded-sm bg-primary/10 px-2 py-1 text-sm font-semibold text-primary"><Zap className="size-4" /> Focused learning workspace</p>
-              <h2 className="font-display text-3xl font-bold text-foreground md:text-4xl">Create, protect, and study rich flashcards.</h2>
-              <div className="mt-4 grid gap-2 sm:grid-cols-4">
-                {learningPath.map(({ label, icon: Icon }, index) => (
-                  <div key={label} className="group flex items-center gap-2 rounded-md border border-border bg-surface-raised px-3 py-2 text-sm font-bold text-foreground transition hover:-translate-y-0.5 hover:border-primary/50">
-                    <span className="grid size-7 place-items-center rounded-sm bg-secondary text-secondary-foreground transition group-hover:bg-primary group-hover:text-primary-foreground"><Icon className="size-4" /></span>
-                    <span>{index + 1}. {label}</span>
-                  </div>
-                ))}
+              <div>
+                <p className="inline-flex items-center gap-2 rounded-sm bg-primary/10 px-2 py-1 text-sm font-semibold text-primary"><Zap className="size-4" /> Focused learning workspace</p>
+                <h2 className="font-display text-3xl font-bold text-foreground md:text-4xl">Create, protect, and study rich flashcards.</h2>
+                <div className="mt-4 grid gap-2 sm:grid-cols-4">
+                  {learningPath.map(({ label, icon: Icon }, index) => (
+                    <div key={label} className="group flex items-center gap-2 rounded-md border border-border bg-surface-raised px-3 py-2 text-sm font-bold text-foreground transition hover:-translate-y-0.5 hover:border-primary/50">
+                      <span className="grid size-7 place-items-center rounded-sm bg-secondary text-secondary-foreground transition group-hover:bg-primary group-hover:text-primary-foreground"><Icon className="size-4" /></span>
+                      <span>{index + 1}. {label}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button onClick={handleUndo} className="inline-flex items-center gap-2 rounded-md border border-border bg-secondary px-3 py-2 text-sm font-semibold text-secondary-foreground transition hover:-translate-y-0.5 hover:shadow-card">
-                <RotateCcw className="size-4" /> Version history
-              </button>
-              <button onClick={addCard} className="inline-flex items-center gap-2 rounded-md bg-gradient-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow-soft transition hover:-translate-y-0.5">
-                <Plus className="size-4" /> New card
-              </button>
-            </div>
+              <div className="flex flex-wrap gap-2">
+                <button onClick={handleUndo} className="inline-flex items-center gap-2 rounded-md border border-border bg-secondary px-3 py-2 text-sm font-semibold text-secondary-foreground transition hover:-translate-y-0.5 hover:shadow-card">
+                  <RotateCcw className="size-4" /> Version history
+                </button>
+                <button onClick={addCard} className="inline-flex items-center gap-2 rounded-md bg-gradient-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow-soft transition hover:-translate-y-0.5">
+                  <Plus className="size-4" /> New card
+                </button>
+              </div>
             </div>
           </header>
 
@@ -415,7 +418,7 @@ const Index = () => {
                     <span className="rounded-sm bg-accent px-2 py-1 text-xs font-bold text-accent-foreground">{selectedTemplate}</span>
                   </div>
                   <div className="mt-4 rounded-md border border-border bg-card p-5 shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-soft">
-                    <p className="text-xs font-bold uppercase tracking-wider text-primary">{selectedCard?.tag ?? activeDeck.name}</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-primary">{selectedCard?.tag ?? activeDeck?.name ?? "General"}</p>
                     <p className="mt-3 whitespace-pre-line text-xl font-bold text-foreground">{selectedCard?.back ?? "Create a card to preview it."}</p>
                     <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
                       <Sigma className="size-4" /> Equation-ready content
@@ -489,10 +492,10 @@ const Index = () => {
               <div className="mt-5 rounded-md border border-border bg-surface-tinted p-4">
                 <div className="flex items-center justify-between text-sm font-semibold text-secondary-foreground">
                   <span>Session progress</span>
-                  <span>{sessionCount} / 18</span>
+                  <span>{sessionCount} / {settings.studySessionLength}</span>
                 </div>
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-card">
-                  <div className="h-full rounded-full bg-gradient-primary" style={{ width: `${(sessionCount / 18) * 100}%` }} />
+                  <div className="h-full rounded-full bg-gradient-primary" style={{ width: `${(sessionCount / settings.studySessionLength) * 100}%` }} />
                 </div>
               </div>
             </section>
