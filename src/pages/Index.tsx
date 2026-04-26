@@ -1,3 +1,4 @@
+// Spark Study: Main page component
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeftRight,
@@ -236,8 +237,8 @@ const Index = () => {
         <div className="absolute left-[8%] top-16 size-56 rounded-full bg-primary/10 blur-3xl animate-drift" />
         <div className="absolute bottom-10 right-[10%] size-72 rounded-full bg-accent/10 blur-3xl animate-drift-delayed" />
       </div>
-      <div className="mx-auto flex min-h-screen w-full max-w-[1500px] flex-col lg:flex-row">
-        <aside className="relative z-10 border-b border-border/70 bg-sidebar/90 px-4 py-4 backdrop-blur-xl lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r">
+      <div className="mx-auto flex min-h-screen w-full max-w-[1500px] flex-col md:flex-row">
+        <aside className="relative z-10 border-b border-border/70 bg-sidebar/90 px-4 py-4 backdrop-blur-xl md:min-h-screen md:w-72 md:border-b-0 md:border-r">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="grid size-11 place-items-center rounded-md bg-gradient-primary text-primary-foreground shadow-soft">
