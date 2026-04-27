@@ -10,15 +10,16 @@ Below is the checklist to turn it into a usable system.
 
 ---
 
+
 ## 1) Define the product minimum (so development is not random)
 
-- [ ] Decide the target: **single-user local app** (no accounts) vs **multi-user** (accounts + sync)
-- [ ] Confirm core workflows to support:
-  - [ ] Create/edit decks
-  - [ ] Create/edit cards
-  - [ ] Study session (show next due cards)
-  - [ ] Mark results (know/again)
-  - [ ] View progress
+- [x] Decide the target: **single-user local app** (no accounts)
+- [x] Confirm core workflows to support:
+  - [x] Create/edit decks
+  - [x] Create/edit cards
+  - [x] Study session (show next due cards)
+  - [x] Mark results (know/again)
+  - [x] View progress
 
 ---
 
