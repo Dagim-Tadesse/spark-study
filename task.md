@@ -93,9 +93,9 @@ You have Undo/Redo in-memory, but it’s limited and not persisted.
 
 Dark mode currently toggles a class manually; `next-themes` is installed but unused.
 
-- [ ] Persist theme preference
-- [ ] Decide whether to keep manual theme or switch to `next-themes` (remove unused dep if not used)
-- [ ] Add basic settings: study session length, new card defaults, etc.
+- [x] Persist theme preference
+- [x] Switch to `next-themes` and remove manual theme logic
+- [x] Add basic settings: study session length, new card defaults, etc.
 
 ---
 

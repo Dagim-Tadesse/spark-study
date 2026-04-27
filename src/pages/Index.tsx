@@ -34,6 +34,8 @@ import {
   X,
 } from "lucide-react";
 import { useStudyData } from "@/hooks/use-study-data";
+import { SettingsDialog } from "@/components/SettingsDialog";
+import { useSettings } from "@/contexts/SettingsContext";
 
 const templates = ["Definition", "Formula", "Q&A", "Diagram"];
 
@@ -88,6 +90,7 @@ const Index = () => {
     restoreCardVersion,
     restoreLatestVersion,
   } = useStudyData();
+  const { settings } = useSettings();
 
   const [darkMode, setDarkMode] = useState(
     () => localStorage.getItem("spark-study-theme") === "dark",
@@ -143,7 +146,7 @@ const Index = () => {
 
   const selectedCard =
     cards.find((card) => card.id === selectedCardId) ?? cards[0];
-  const selectedTemplate = selectedCard?.template ?? "Formula";
+  const selectedTemplate = selectedCard?.template ?? settings.newCardTemplate;
   const selectedTags = selectedCard?.tags ?? [];
 
   const filteredDecks = useMemo(
@@ -243,7 +246,7 @@ const Index = () => {
 
   const markStudy = (known: boolean) => {
     setFlipped(false);
-    setSessionCount((count) => Math.min(18, count + 1));
+    setSessionCount((count) => Math.min(settings.studySessionLength, count + 1));
     setDueToday((count) => Math.max(0, count - 1));
     setRetention((value) => Math.min(99, value + (known ? 1 : 0)));
     setStreak((value) => (known ? value : Math.max(1, value)));
@@ -280,17 +283,20 @@ const Index = () => {
                 </h1>
               </div>
             </div>
-            <button
-              aria-label="Toggle high contrast theme"
-              onClick={() => setDarkMode((value) => !value)}
-              className="rounded-md border border-border bg-card p-2 text-muted-foreground transition hover:scale-105 hover:text-primary"
-            >
-              {darkMode ? (
-                <Sun className="size-4" />
-              ) : (
-                <Moon className="size-4" />
-              )}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                aria-label="Toggle high contrast theme"
+                onClick={() => setDarkMode((value) => !value)}
+                className="rounded-md border border-border bg-card p-2 text-muted-foreground transition hover:scale-105 hover:text-primary"
+              >
+                {darkMode ? (
+                  <Sun className="size-4" />
+                ) : (
+                  <Moon className="size-4" />
+                )}
+              </button>
+              <SettingsDialog />
+            </div>
           </div>
 
           <label className="mt-7 flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 shadow-card">
@@ -723,12 +729,12 @@ const Index = () => {
               <div className="mt-5 rounded-md border border-border bg-surface-tinted p-4">
                 <div className="flex items-center justify-between text-sm font-semibold text-secondary-foreground">
                   <span>Session progress</span>
-                  <span>{sessionCount} / 18</span>
+                  <span>{sessionCount} / {settings.studySessionLength}</span>
                 </div>
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-card">
                   <div
                     className="h-full rounded-full bg-gradient-primary"
-                    style={{ width: `${(sessionCount / 18) * 100}%` }}
+                    style={{ width: `${(sessionCount / Math.max(1, settings.studySessionLength)) * 100}%` }}
                   />
                 </div>
               </div>
