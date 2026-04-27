@@ -367,8 +367,8 @@ const Index = () => {
         <div className="absolute left-[8%] top-16 size-56 rounded-full bg-primary/10 blur-3xl animate-drift" />
         <div className="absolute bottom-10 right-[10%] size-72 rounded-full bg-accent/10 blur-3xl animate-drift-delayed" />
       </div>
-      <div className="mx-auto flex min-h-screen w-full max-w-[1500px] flex-col lg:flex-row">
-        <aside className="relative z-10 flex flex-col border-b border-border/70 bg-sidebar/90 px-4 py-4 backdrop-blur-xl lg:h-screen lg:w-72 lg:shrink-0 lg:border-b-0 lg:border-r overflow-y-auto custom-scrollbar">
+      <div className="mx-auto flex min-h-screen w-full max-w-[1500px] flex-col md:flex-row">
+        <aside className="relative z-10 flex flex-col border-b border-border/70 bg-sidebar/90 px-4 py-4 backdrop-blur-xl md:h-screen md:w-72 md:shrink-0 md:border-b-0 md:border-r overflow-y-auto custom-scrollbar">
           <div className="flex items-center justify-between gap-3 shrink-0">
             <div className="flex items-center gap-3">
               <div className="grid size-11 place-items-center rounded-md bg-gradient-primary text-primary-foreground shadow-soft shrink-0">
@@ -544,7 +544,7 @@ const Index = () => {
                 </div>
               )}
 
-              <div className="grid gap-4 p-4 lg:grid-cols-[1fr_1fr] flex-1 min-h-0">
+              <div className="grid gap-4 p-4 md:grid-cols-[1fr_1fr] flex-1 min-h-0">
                 <div className="rounded-md border border-border bg-surface-raised p-4 flex flex-col min-w-0 h-full">
                   <div className="mb-3 flex flex-wrap items-center gap-2 shrink-0">
                     {editorTools.map(({ icon: Icon, action, label }) => (
