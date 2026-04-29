@@ -34,7 +34,7 @@ const Index = () => {
           profileService.getProfile(user.id)
         ]);
         
-        setDecks(fetchedDecks.map(d => ({ ...d, progress: 0 })));
+        setDecks(fetchedDecks.map(d => ({ ...d, progress: d.progress ?? 0 })));
         setCards(fetchedCards);
         setProfile(fetchedProfile);
       } catch (error) {
