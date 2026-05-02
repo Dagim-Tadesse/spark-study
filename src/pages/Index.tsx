@@ -1,4 +1,3 @@
-// Spark Study: Main page component
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeftRight,
@@ -104,6 +103,7 @@ const Index = () => {
   const [retention, setRetention] = useState(86);
   const [dueToday, setDueToday] = useState(18);
   const [autosaveText, setAutosaveText] = useState("Auto-saved just now");
+  const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
@@ -239,6 +239,7 @@ const Index = () => {
     if (tool === "undo") return handleUndo();
     if (tool === "redo") return handleRedo();
     updateCard(additions[tool] ?? {});
+    setAutosaveText(`${tool} added`);
   };
 
   const markStudy = (known: boolean) => {
@@ -506,15 +507,24 @@ const Index = () => {
                 <div className="rounded-md border border-border bg-surface-raised p-4">
                   <div className="mb-3 flex flex-wrap items-center gap-2">
                     {editorTools.map(({ icon: Icon, action, label }) => (
-                      <button
-                        key={action}
-                        onClick={() => applyTool(action)}
-                        title={label}
-                        aria-label={`Editor ${action}`}
-                        className="group rounded-md border border-border bg-card p-2 text-muted-foreground transition hover:-translate-y-0.5 hover:text-primary hover:shadow-card active:scale-95"
-                      >
-                        <Icon className="size-4" />
-                      </button>
+                      <div key={action} className="relative">
+                        <button
+                          onClick={() => applyTool(action)}
+                          onMouseEnter={() => setActiveTooltip(action)}
+                          onMouseLeave={() => setActiveTooltip(null)}
+                          title={label}
+                          aria-label={`Editor ${action}`}
+                          className="group rounded-md border border-border bg-card p-2 text-muted-foreground transition hover:-translate-y-0.5 hover:text-primary hover:shadow-card active:scale-95"
+                        >
+                          <Icon className="size-4" />
+                        </button>
+                        {activeTooltip === action && (
+                          <div className="absolute left-1/2 z-50 mt-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-xs text-white shadow-lg dark:bg-gray-100 dark:text-gray-900">
+                            {label}
+                            <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-gray-900 dark:bg-gray-100"></div>
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
                   <div className="space-y-3">
