@@ -1,0 +1,294 @@
+import { useEffect, useMemo, useState } from "react";
+import {
+  Plus,
+  Search,
+  ChevronRight,
+  Trash2,
+  Type,
+  Italic,
+  List,
+  Sigma,
+  Image,
+  Volume2,
+  LayoutGrid,
+  BookOpen
+} from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import { deckService, Deck } from "../services/deckService";
+import { cardService, Card } from "../services/cardService";
+import Layout from "../components/Layout";
+import { cn } from "@/lib/utils";
+
+const editorTools = [
+  { icon: Type, action: "type", label: "Key term" },
+  { icon: Italic, action: "italic", label: "Emphasis" },
+  { icon: List, action: "list", label: "List" },
+  { icon: Sigma, action: "equation", label: "Equation" },
+  { icon: Image, action: "image", label: "Image cue" },
+  { icon: Volume2, action: "audio", label: "Audio cue" },
+];
+
+const Decks = () => {
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [decks, setDecks] = useState<(Deck & { progress?: number })[]>([]);
+  const [cards, setCards] = useState<Card[]>([]);
+  const [selectedDeckId, setSelectedDeckId] = useState<string | null>(null);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [autosaveText, setAutosaveText] = useState("Up to date");
+  const [showSafety, setShowSafety] = useState(false);
+
+  // Local state for immediate typing feedback
+  const [localFront, setLocalFront] = useState("");
+  const [localBack, setLocalBack] = useState("");
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const [fetchedDecks, fetchedCards] = await Promise.all([
+          deckService.getDecks(user.id),
+          cardService.getCards(user.id),
+        ]);
+        setDecks(fetchedDecks.map(d => ({ ...d, progress: 0 })));
+        setCards(fetchedCards);
+        if (fetchedDecks.length > 0) {
+          setSelectedDeckId(fetchedDecks[0].id);
+          const firstCard = fetchedCards.find(c => c.deck_id === fetchedDecks[0].id);
+          if (firstCard) {
+            setSelectedCardId(firstCard.id);
+            setLocalFront(firstCard.front);
+            setLocalBack(firstCard.back);
+          }
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [user]);
+
+  const deckCards = useMemo(() => cards.filter(c => c.deck_id === selectedDeckId), [cards, selectedDeckId]);
+  const filteredDecks = useMemo(() => decks.filter(d => d.name.toLowerCase().includes(searchTerm.toLowerCase())), [decks, searchTerm]);
+
+  const handleSelectDeck = (deckId: string) => {
+    setSelectedDeckId(deckId);
+    const firstCard = cards.find(c => c.deck_id === deckId);
+    if (firstCard) {
+      setSelectedCardId(firstCard.id);
+      setLocalFront(firstCard.front);
+      setLocalBack(firstCard.back);
+    } else {
+      setSelectedCardId(null);
+      setLocalFront("");
+      setLocalBack("");
+    }
+    setShowSafety(false);
+  };
+
+  const handleSelectCard = (card: Card) => {
+    setSelectedCardId(card.id);
+    setLocalFront(card.front);
+    setLocalBack(card.back);
+    setShowSafety(false);
+  };
+
+  const handleUpdateContent = (updates: { front?: string; back?: string }) => {
+    if (!selectedCardId) return;
+    
+    if (updates.front !== undefined) setLocalFront(updates.front);
+    if (updates.back !== undefined) setLocalBack(updates.back);
+
+    setAutosaveText("Saving...");
+    // Update local cards list
+    setCards(prev => prev.map(c => c.id === selectedCardId ? { ...c, ...updates } : c));
+    
+    // Debounced-style save
+    const timer = setTimeout(async () => {
+      try {
+        await cardService.updateCard(selectedCardId, updates);
+        setAutosaveText("Saved");
+      } catch (e) {
+        setAutosaveText("Sync error");
+      }
+    }, 1000);
+    return () => clearTimeout(timer);
+  };
+
+  const addCard = async () => {
+    if (!user || !selectedDeckId) return;
+    setAutosaveText("Creating...");
+    try {
+      const newCard = await cardService.createCard({
+        deck_id: selectedDeckId,
+        user_id: user.id,
+        template: "Q&A",
+        front: "",
+        back: "",
+        tag: "new",
+        next_review: Date.now(),
+        interval: 0,
+      });
+      setCards(prev => [...prev, newCard]);
+      handleSelectCard(newCard);
+      setAutosaveText("Created");
+    } catch (e) {
+      setAutosaveText("Error");
+    }
+  };
+
+  const addDeck = async () => {
+    if (!user) return;
+    try {
+      const newDeck = await deckService.createDeck(user.id, `New Deck ${decks.length + 1}`, "bg-primary");
+      setDecks(prev => [...prev, { ...newDeck, progress: 0 }]);
+      handleSelectDeck(newDeck.id);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedCardId) return;
+    try {
+      await cardService.deleteCard(selectedCardId);
+      const updated = cards.filter(c => c.id !== selectedCardId);
+      setCards(updated);
+      const next = updated.find(c => c.deck_id === selectedDeckId);
+      if (next) handleSelectCard(next);
+      else {
+        setSelectedCardId(null);
+        setLocalFront("");
+        setLocalBack("");
+      }
+      setShowSafety(false);
+      setAutosaveText("Deleted");
+    } catch (e) {
+      setAutosaveText("Error deleting");
+    }
+  };
+
+  if (isLoading) return <Layout><div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div></Layout>;
+
+  return (
+    <Layout>
+      <div className="flex flex-col lg:flex-row gap-8 h-[calc(100vh-160px)]">
+        <aside className="w-full lg:w-80 flex flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold flex items-center gap-2"><LayoutGrid className="size-5 text-primary" /> Library</h2>
+            <button onClick={addDeck} className="p-2 rounded-lg bg-primary text-white hover:opacity-90"><Plus className="size-5" /></button>
+          </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <input 
+              type="text" placeholder="Search decks..." value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 rounded-lg border border-border bg-card outline-none" 
+            />
+          </div>
+          <div className="space-y-2">
+            {filteredDecks.map(deck => (
+              <button
+                key={deck.id} onClick={() => handleSelectDeck(deck.id)}
+                className={cn("w-full text-left p-4 rounded-xl border transition-all", selectedDeckId === deck.id ? "border-primary bg-primary/5" : "border-border bg-card")}
+              >
+                <p className="font-bold text-sm truncate">{deck.name}</p>
+                <p className="text-[10px] text-muted-foreground uppercase font-black mt-1">{cards.filter(c => c.deck_id === deck.id).length} Cards</p>
+              </button>
+            ))}
+          </div>
+        </aside>
+
+        <main className="flex-1 flex flex-col gap-6 overflow-hidden">
+          {selectedDeckId ? (
+            <>
+              <div className="flex items-center justify-between bg-card p-4 rounded-xl border border-border shadow-sm">
+                <h3 className="text-lg font-bold truncate">{decks.find(d => d.id === selectedDeckId)?.name}</h3>
+                <button onClick={addCard} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-bold text-sm shadow-soft">
+                  <Plus className="size-4" /> Add Card
+                </button>
+              </div>
+
+              <div className="flex-1 grid grid-cols-1 xl:grid-cols-2 gap-6 overflow-hidden">
+                <div className="bg-card border border-border rounded-xl p-6 flex flex-col gap-4 shadow-sm overflow-hidden">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black uppercase text-muted-foreground">Editor</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] font-bold text-success uppercase tracking-wider">{autosaveText}</span>
+                      <button onClick={() => setShowSafety(true)} className="text-destructive hover:bg-destructive/10 p-2 rounded-md"><Trash2 className="size-4" /></button>
+                    </div>
+                  </div>
+
+                  {showSafety && (
+                    <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center justify-between">
+                      <span className="text-xs font-bold">Delete this card?</span>
+                      <div className="flex gap-2">
+                        <button onClick={confirmDelete} className="px-4 py-1.5 bg-destructive text-white text-[10px] font-bold rounded-md">Yes, Delete</button>
+                        <button onClick={() => setShowSafety(false)} className="px-4 py-1.5 bg-secondary text-foreground text-[10px] font-bold rounded-md">Cancel</button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pb-2">
+                    {editorTools.map(t => (
+                      <button key={t.label} className="p-2.5 rounded-lg bg-secondary text-muted-foreground hover:text-primary transition-all"><t.icon className="size-4" /></button>
+                    ))}
+                  </div>
+
+                  <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Front Side</label>
+                      <textarea 
+                        value={localFront} 
+                        onChange={(e) => handleUpdateContent({ front: e.target.value })}
+                        disabled={!selectedCardId}
+                        className="w-full h-32 p-4 rounded-xl bg-secondary/30 border border-border focus:border-primary outline-none resize-none text-sm font-medium"
+                        placeholder="Type the question here..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Back Side</label>
+                      <textarea 
+                        value={localBack} 
+                        onChange={(e) => handleUpdateContent({ back: e.target.value })}
+                        disabled={!selectedCardId}
+                        className="w-full h-32 p-4 rounded-xl bg-secondary/30 border border-border focus:border-primary outline-none resize-none text-sm font-medium"
+                        placeholder="Type the answer here..."
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-card border border-border rounded-xl p-6 shadow-sm flex flex-col overflow-hidden">
+                  <span className="text-xs font-black uppercase text-muted-foreground mb-4">Deck Cards</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto pr-2 custom-scrollbar">
+                    {deckCards.map(c => (
+                      <button 
+                        key={c.id} onClick={() => handleSelectCard(c)}
+                        className={cn("p-4 rounded-xl border text-left transition-all", selectedCardId === c.id ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border hover:border-primary/30")}
+                      >
+                        <p className="text-xs font-bold line-clamp-2">{c.front || "(Empty Card)"}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-border rounded-3xl opacity-50">
+              <BookOpen className="size-16 mb-4 text-primary" />
+              <h3 className="text-xl font-bold">Select a deck to begin</h3>
+              <p className="text-sm mt-2">Manage your flashcards and prepare for your sessions.</p>
+            </div>
+          )}
+        </main>
+      </div>
+    </Layout>
+  );
+};
+
+export default Decks;
