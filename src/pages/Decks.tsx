@@ -11,13 +11,18 @@ import {
   Image,
   Volume2,
   LayoutGrid,
-  BookOpen
+  BookOpen,
+  MoreVertical,
+  Edit2,
+  Copy,
+  FolderInput
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { deckService, Deck } from "../services/deckService";
 import { cardService, Card } from "../services/cardService";
 import Layout from "../components/Layout";
 import { cn } from "@/lib/utils";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const editorTools = [
   { icon: Type, action: "type", label: "Key term" },
@@ -38,6 +43,10 @@ const Decks = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [autosaveText, setAutosaveText] = useState("Up to date");
   const [showSafety, setShowSafety] = useState(false);
+
+  // Deck editing state
+  const [editingDeckId, setEditingDeckId] = useState<string | null>(null);
+  const [editingDeckName, setEditingDeckName] = useState("");
 
   // Local state for immediate typing feedback
   const [localFront, setLocalFront] = useState("");
@@ -75,7 +84,15 @@ const Decks = () => {
   const deckCards = useMemo(() => cards.filter(c => c.deck_id === selectedDeckId), [cards, selectedDeckId]);
   const filteredDecks = useMemo(() => decks.filter(d => d.name.toLowerCase().includes(searchTerm.toLowerCase())), [decks, searchTerm]);
 
-  const handleSelectDeck = (deckId: string) => {
+  const handleSelectDeck = (deckId: string | null) => {
+    if (!deckId) {
+      setSelectedDeckId(null);
+      setSelectedCardId(null);
+      setLocalFront("");
+      setLocalBack("");
+      setShowSafety(false);
+      return;
+    }
     setSelectedDeckId(deckId);
     const firstCard = cards.find(c => c.deck_id === deckId);
     if (firstCard) {
@@ -99,14 +116,14 @@ const Decks = () => {
 
   const handleUpdateContent = (updates: { front?: string; back?: string }) => {
     if (!selectedCardId) return;
-    
+
     if (updates.front !== undefined) setLocalFront(updates.front);
     if (updates.back !== undefined) setLocalBack(updates.back);
 
     setAutosaveText("Saving...");
     // Update local cards list
     setCards(prev => prev.map(c => c.id === selectedCardId ? { ...c, ...updates } : c));
-    
+
     // Debounced-style save
     const timer = setTimeout(async () => {
       try {
@@ -152,6 +169,42 @@ const Decks = () => {
     }
   };
 
+  const startEditingDeck = (deck: Deck, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingDeckId(deck.id);
+    setEditingDeckName(deck.name);
+  };
+
+  const saveDeckName = async () => {
+    if (!editingDeckId || !editingDeckName.trim()) {
+      setEditingDeckId(null);
+      return;
+    }
+    const id = editingDeckId;
+    const newName = editingDeckName.trim();
+    setEditingDeckId(null);
+    setDecks(prev => prev.map(d => d.id === id ? { ...d, name: newName } : d));
+    try {
+      await deckService.updateDeck(id, { name: newName });
+    } catch (e) {
+      console.error("Error renaming deck", e);
+    }
+  };
+
+  const confirmDeleteDeck = async (deckId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this deck? All its cards will also be lost.")) return;
+    try {
+      await deckService.deleteDeck(deckId);
+      setDecks(prev => prev.filter(d => d.id !== deckId));
+      if (selectedDeckId === deckId) {
+        handleSelectDeck(decks.find(d => d.id !== deckId)?.id || null);
+      }
+    } catch (e) {
+      console.error("Error deleting deck", e);
+    }
+  };
+
   const confirmDelete = async () => {
     if (!selectedCardId) return;
     try {
@@ -184,21 +237,56 @@ const Decks = () => {
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            <input 
+            <input
               type="text" placeholder="Search decks..." value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-lg border border-border bg-card outline-none" 
+              className="w-full pl-10 pr-4 py-2 rounded-lg border border-border bg-card outline-none"
             />
           </div>
           <div className="space-y-2">
             {filteredDecks.map(deck => (
-              <button
-                key={deck.id} onClick={() => handleSelectDeck(deck.id)}
-                className={cn("w-full text-left p-4 rounded-xl border transition-all", selectedDeckId === deck.id ? "border-primary bg-primary/5" : "border-border bg-card")}
-              >
-                <p className="font-bold text-sm truncate">{deck.name}</p>
-                <p className="text-[10px] text-muted-foreground uppercase font-black mt-1">{cards.filter(c => c.deck_id === deck.id).length} Cards</p>
-              </button>
+              <div key={deck.id} className="relative group">
+                <button
+                  onClick={() => handleSelectDeck(deck.id)}
+                  className={cn("w-full text-left p-4 rounded-xl border transition-all", selectedDeckId === deck.id ? "border-primary bg-primary/5" : "border-border bg-card hover:border-primary/30")}
+                >
+                  {editingDeckId === deck.id ? (
+                    <input
+                      autoFocus
+                      type="text"
+                      value={editingDeckName}
+                      onChange={(e) => setEditingDeckName(e.target.value)}
+                      onBlur={saveDeckName}
+                      onKeyDown={(e) => e.key === 'Enter' && saveDeckName()}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-full bg-background border border-primary rounded px-2 py-1 text-sm font-bold outline-none"
+                    />
+                  ) : (
+                    <p className="font-bold text-sm truncate pr-6">{deck.name}</p>
+                  )}
+                  <p className="text-[10px] text-muted-foreground uppercase font-black mt-1">{cards.filter(c => c.deck_id === deck.id).length} Cards</p>
+                </button>
+
+                <div className={cn("absolute right-2 top-1/2 -translate-y-1/2 transition-opacity", selectedDeckId === deck.id ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button onClick={(e) => e.stopPropagation()} className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground">
+                        <MoreVertical className="size-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-40">
+                      <DropdownMenuItem onClick={(e) => startEditingDeck(deck, e as any)}>
+                        <Edit2 className="size-4 mr-2" />
+                        Rename Deck
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={(e) => confirmDeleteDeck(deck.id, e as any)}>
+                        <Trash2 className="size-4 mr-2" />
+                        Delete Deck
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
             ))}
           </div>
         </aside>
@@ -242,8 +330,8 @@ const Decks = () => {
                   <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Front Side</label>
-                      <textarea 
-                        value={localFront} 
+                      <textarea
+                        value={localFront}
                         onChange={(e) => handleUpdateContent({ front: e.target.value })}
                         disabled={!selectedCardId}
                         className="w-full h-32 p-4 rounded-xl bg-secondary/30 border border-border focus:border-primary outline-none resize-none text-sm font-medium"
@@ -252,8 +340,8 @@ const Decks = () => {
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Back Side</label>
-                      <textarea 
-                        value={localBack} 
+                      <textarea
+                        value={localBack}
                         onChange={(e) => handleUpdateContent({ back: e.target.value })}
                         disabled={!selectedCardId}
                         className="w-full h-32 p-4 rounded-xl bg-secondary/30 border border-border focus:border-primary outline-none resize-none text-sm font-medium"
@@ -267,7 +355,7 @@ const Decks = () => {
                   <span className="text-xs font-black uppercase text-muted-foreground mb-4">Deck Cards</span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto pr-2 custom-scrollbar">
                     {deckCards.map(c => (
-                      <button 
+                      <button
                         key={c.id} onClick={() => handleSelectCard(c)}
                         className={cn("p-4 rounded-xl border text-left transition-all", selectedCardId === c.id ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border hover:border-primary/30")}
                       >
