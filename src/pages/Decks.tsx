@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus,
   Search,
@@ -53,6 +53,33 @@ const Decks = () => {
   const [localBack, setLocalBack] = useState("");
   const [localTag, setLocalTag] = useState("");
   const [showMoveDialog, setShowMoveDialog] = useState(false);
+
+  // Autosave references to fix debounce and flush on unmount
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingSaveRef = useRef<{ id: string; updates: Partial<Card> } | null>(null);
+
+  // Handle beforeunload warning
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (pendingSaveRef.current) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
+
+  // Flush on unmount
+  useEffect(() => {
+    return () => {
+      if (pendingSaveRef.current) {
+        const pending = pendingSaveRef.current;
+        cardService.updateCard(pending.id, pending.updates).catch(console.error);
+        pendingSaveRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -114,6 +141,14 @@ const Decks = () => {
   };
 
   const handleSelectCard = (card: Card) => {
+    if (pendingSaveRef.current && pendingSaveRef.current.id !== card.id) {
+      // Flush previous save before switching if switching cards rapidly
+      const pending = pendingSaveRef.current;
+      cardService.updateCard(pending.id, pending.updates).catch(console.error);
+      pendingSaveRef.current = null;
+    }
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+
     setSelectedCardId(card.id);
     setLocalFront(card.front);
     setLocalBack(card.back);
@@ -133,16 +168,31 @@ const Decks = () => {
     // Update local cards list
     setCards(prev => prev.map(c => c.id === selectedCardId ? { ...c, ...updates } : c));
 
-    // Debounced-style save
-    const timer = setTimeout(async () => {
+    // Calculate final update payload from the current known state + updates
+    const currentCard = cards.find(c => c.id === selectedCardId);
+    const fullUpdates = {
+      front: updates.front !== undefined ? updates.front : (currentCard?.front || ""),
+      back: updates.back !== undefined ? updates.back : (currentCard?.back || ""),
+      tag: updates.tag !== undefined ? updates.tag : (currentCard?.tag || ""),
+    };
+
+    pendingSaveRef.current = { id: selectedCardId, updates: fullUpdates };
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+
+    // Properly debounced save
+    saveTimeoutRef.current = setTimeout(async () => {
+      const pending = pendingSaveRef.current;
+      if (!pending) return;
       try {
-        await cardService.updateCard(selectedCardId, updates);
-        setAutosaveText("Saved");
+        await cardService.updateCard(pending.id, pending.updates);
+        if (pendingSaveRef.current?.id === pending.id) {
+          setAutosaveText("Saved");
+          pendingSaveRef.current = null;
+        }
       } catch (e) {
         setAutosaveText("Sync error");
       }
     }, 1000);
-    return () => clearTimeout(timer);
   };
 
   const addCard = async () => {
