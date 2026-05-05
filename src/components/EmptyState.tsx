@@ -1,39 +1,23 @@
 import { Button } from "@/components/ui/button";
+import { FolderOpen, Layers, Plus } from "lucide-react";
 
 interface EmptyStateProps {
-  title: string;
-  description: string;
+  type?: "decks" | "cards";
+  title?: string;
+  description?: string;
   actionLabel?: string;
   onAction?: () => void;
 }
 
-export default function EmptyState({
-  title,
-  description,
-  actionLabel,
-  onAction,
-}: EmptyStateProps) {
-  return (
-    <div className="rounded-md border border-dashed border-border bg-card p-6 text-center shadow-card">
-      <p className="text-lg font-semibold text-foreground">{title}</p>
-      <p className="mt-2 text-sm text-muted-foreground">{description}</p>
-      {actionLabel && onAction && (
-        <Button type="button" className="mt-4" onClick={onAction}>
-          {actionLabel}
-        </Button>
-      )}
-    </div>
-  );
-}import { Button } from "@/components/ui/button";
-import { FolderOpen, Layers, Plus } from "lucide-react";
-
-interface EmptyStateProps {
-  type: "decks" | "cards";
-  onAction?: () => void;
-}
-
-const EmptyState = ({ type, onAction }: EmptyStateProps) => {
+const EmptyState = ({ type = "decks", title, description, actionLabel, onAction }: EmptyStateProps) => {
   const isDecks = type === "decks";
+  const heading = title ?? (isDecks ? "No decks yet" : "No cards in this deck");
+  const body =
+    description ??
+    (isDecks
+      ? "Create your first deck to start building your flashcard collection."
+      : "Add cards to this deck to begin studying.");
+  const cta = actionLabel ?? (isDecks ? "Create Deck" : "Add Card");
 
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
@@ -44,18 +28,12 @@ const EmptyState = ({ type, onAction }: EmptyStateProps) => {
           <Layers className="size-10 text-muted-foreground" />
         )}
       </div>
-      <h3 className="mt-6 text-xl font-bold text-foreground">
-        {isDecks ? "No decks yet" : "No cards in this deck"}
-      </h3>
-      <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-        {isDecks
-          ? "Create your first deck to start building your flashcard collection."
-          : "Add cards to this deck to begin studying."}
-      </p>
+      <h3 className="mt-6 text-xl font-bold text-foreground">{heading}</h3>
+      <p className="mt-2 max-w-sm text-sm text-muted-foreground">{body}</p>
       {onAction && (
         <Button onClick={onAction} className="mt-6">
           <Plus className="mr-2 size-4" />
-          {isDecks ? "Create Deck" : "Add Card"}
+          {cta}
         </Button>
       )}
     </div>
