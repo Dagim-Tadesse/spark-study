@@ -8,9 +8,8 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import Landing from "./pages/Landing.tsx";
 import Index from "./pages/Index.tsx";
-import Decks from "./pages/Decks.tsx";
-import Study from "./pages/Study.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Login from "./pages/Login.tsx";
 
@@ -27,30 +26,15 @@ const App = () => (
               <Sonner />
               <BrowserRouter>
                 <Routes>
+                  <Route path="/" element={<Landing />} />
                   <Route path="/login" element={<Login />} />
-                  <Route 
-                    path="/" 
+                  <Route
+                    path="/app"
                     element={
                       <ProtectedRoute>
                         <Index />
                       </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/decks" 
-                    element={
-                      <ProtectedRoute>
-                        <Decks />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/study" 
-                    element={
-                      <ProtectedRoute>
-                        <Study />
-                      </ProtectedRoute>
-                    } 
+                    }
                   />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
