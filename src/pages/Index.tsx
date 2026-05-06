@@ -784,7 +784,36 @@ const Index = () => {
             </div>
           </div>
         )}
-      </section>
+        </section>
+      </div>
+
+      {/* Mobile bottom tab bar */}
+      <nav
+        role="tablist"
+        aria-label="Studio sections (mobile)"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-card/95 px-2 py-2 backdrop-blur-xl shadow-[0_-4px_24px_-10px_rgba(0,0,0,0.15)] md:hidden"
+      >
+        <div className="mx-auto flex max-w-md items-center justify-around">
+          {tabs.map((t) => {
+            const active = tab === t.key;
+            return (
+              <button
+                key={t.key}
+                role="tab"
+                aria-selected={active}
+                aria-controls={`panel-${t.key}`}
+                onClick={() => setTab(t.key)}
+                className={`flex flex-col items-center gap-1 rounded-md px-2 py-1.5 text-[10px] font-bold uppercase tracking-tight transition-all duration-300 ${
+                  active ? "text-primary scale-110" : "text-muted-foreground"
+                }`}
+              >
+                <t.icon className={`size-5 transition-transform ${active ? "animate-scale-in" : ""}`} />
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+      </nav>
     </main>
   );
 };
