@@ -72,14 +72,27 @@ const Landing = () => {
       </nav>
 
       {/* Hero */}
-      <section className="relative z-10 mx-auto max-w-6xl px-5 pt-10 pb-20 md:pt-20">
-        <div className="grid items-center gap-10 md:grid-cols-2">
+      <section className="relative z-10 mx-auto max-w-6xl px-5 pt-10 pb-20 md:pt-16">
+        <div className="grid items-center gap-12 md:grid-cols-[1.1fr_1fr]">
+          {/* Left: copy */}
           <div className="animate-fade-in-up">
-            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/80 px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary backdrop-blur">
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-card/80 px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary backdrop-blur shadow-soft">
+              <span className="size-1.5 rounded-full bg-success animate-pulse-save" />
               <Sparkles className="size-3.5" /> HCI-driven micro-learning
             </span>
-            <h2 className="mt-5 font-display text-4xl font-bold leading-tight md:text-6xl">
-              Learn in <span className="bg-gradient-primary bg-clip-text text-transparent">small bursts</span>.
+            <h2 className="mt-5 font-display text-4xl font-bold leading-[1.05] md:text-6xl lg:text-7xl">
+              Learn in{" "}
+              <span
+                className="bg-clip-text text-transparent animate-gradient-x"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--study-back)), hsl(var(--primary)))",
+                  backgroundSize: "300% 100%",
+                }}
+              >
+                small bursts
+              </span>
+              .
               <br /> Remember for longer.
             </h2>
             <p className="mt-5 max-w-xl text-base text-muted-foreground md:text-lg">
@@ -89,14 +102,15 @@ const Landing = () => {
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 to={ctaTo}
-                className="group inline-flex items-center gap-2 rounded-md bg-gradient-primary px-5 py-3 text-sm font-bold text-primary-foreground shadow-soft transition hover:-translate-y-0.5"
+                className="group relative inline-flex items-center gap-2 overflow-hidden rounded-md bg-gradient-primary px-5 py-3 text-sm font-bold text-primary-foreground shadow-soft transition hover:-translate-y-0.5 hover:shadow-focus"
               >
+                <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
                 Start studying free
                 <ArrowRight className="size-4 transition group-hover:translate-x-1" />
               </Link>
               <a
                 href="#features"
-                className="inline-flex items-center gap-2 rounded-md border border-border bg-card/80 px-5 py-3 text-sm font-bold text-foreground backdrop-blur transition hover:-translate-y-0.5"
+                className="inline-flex items-center gap-2 rounded-md border border-border bg-card/80 px-5 py-3 text-sm font-bold text-foreground backdrop-blur transition hover:-translate-y-0.5 hover:border-primary/40"
               >
                 Explore features
               </a>
@@ -110,48 +124,116 @@ const Landing = () => {
             </div>
           </div>
 
-          {/* Hero card visual */}
-          <div className="relative animate-scale-in">
-            <div className="absolute -inset-6 rounded-3xl bg-gradient-primary opacity-20 blur-2xl" />
-            <div className="relative rounded-2xl border border-border bg-card/90 p-6 shadow-soft backdrop-blur-xl">
-              <div className="flex items-center justify-between">
-                <span className="rounded-md bg-primary/10 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-primary">
-                  Biology · Cell
-                </span>
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-success">
-                  <span className="size-1.5 rounded-full bg-success animate-pulse-save" /> Auto-saved
-                </span>
+          {/* Right: animated card stack */}
+          <div className="relative h-[440px] md:h-[520px] animate-scale-in">
+            <div className="absolute inset-0 -z-0">
+              <div className="absolute left-1/2 top-1/2 size-72 -translate-x-1/2 -translate-y-1/2 bg-gradient-primary opacity-30 blur-3xl animate-blob" />
+              <div className="absolute right-0 top-10 size-40 rounded-full bg-accent/30 blur-2xl animate-float-y" />
+            </div>
+
+            {/* Orbiting badges */}
+            <div className="pointer-events-none absolute left-1/2 top-1/2 size-2 -translate-x-1/2 -translate-y-1/2">
+              <div className="absolute animate-orbit">
+                <div className="grid size-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-border bg-card/90 shadow-card backdrop-blur">
+                  <Brain className="size-4 text-primary" />
+                </div>
               </div>
-              <p className="mt-5 font-display text-2xl font-bold leading-tight">
-                What process produces ATP in mitochondria?
+              <div className="absolute" style={{ animation: "orbit 18s linear infinite -6s" }}>
+                <div className="grid size-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-border bg-card/90 shadow-card backdrop-blur">
+                  <Zap className="size-4 text-accent" />
+                </div>
+              </div>
+              <div className="absolute" style={{ animation: "orbit 22s linear infinite -12s" }}>
+                <div className="grid size-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-border bg-card/90 shadow-card backdrop-blur">
+                  <ShieldCheck className="size-4 text-success" />
+                </div>
+              </div>
+            </div>
+
+            {/* Back card */}
+            <div className="absolute right-2 top-4 w-[78%] rotate-6 rounded-2xl border border-border bg-card/70 p-5 shadow-card backdrop-blur-xl animate-float-y-delayed">
+              <span className="rounded-md bg-accent/20 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-accent-foreground">
+                Math · Calculus
+              </span>
+              <p className="mt-3 font-display text-lg font-bold opacity-80">
+                d/dx [sin(x)] = cos(x)
               </p>
-              <div className="mt-6 rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4 text-sm">
-                <p className="font-semibold text-primary">Answer</p>
-                <p className="mt-1 text-foreground">
-                  Oxidative phosphorylation — the electron transport chain coupled with ATP synthase.
+            </div>
+
+            {/* Middle card */}
+            <div className="absolute left-2 top-24 w-[78%] -rotate-3 rounded-2xl border border-border bg-card/80 p-5 shadow-card backdrop-blur-xl animate-float-y">
+              <span className="rounded-md bg-success/20 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-success">
+                History · 1969
+              </span>
+              <p className="mt-3 font-display text-lg font-bold opacity-90">
+                First moon landing — Apollo 11.
+              </p>
+            </div>
+
+            {/* Front card (hero) */}
+            <div className="absolute left-1/2 top-1/2 w-[88%] max-w-md -translate-x-1/2 -translate-y-1/2 animate-tilt">
+              <div className="absolute -inset-4 rounded-3xl bg-gradient-primary opacity-30 blur-2xl" />
+              <div className="relative rounded-2xl border border-border bg-card/95 p-6 shadow-soft backdrop-blur-xl">
+                <div className="flex items-center justify-between">
+                  <span className="rounded-md bg-primary/15 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-primary">
+                    Biology · Cell
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-success">
+                    <span className="size-1.5 rounded-full bg-success animate-pulse-save" /> Auto-saved
+                  </span>
+                </div>
+                <p className="mt-5 font-display text-xl md:text-2xl font-bold leading-tight">
+                  What process produces ATP in mitochondria?
                 </p>
+                <div className="mt-5 rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4 text-sm">
+                  <p className="font-semibold text-primary">Answer</p>
+                  <p className="mt-1 text-foreground">
+                    Oxidative phosphorylation — electron transport chain coupled with ATP synthase.
+                  </p>
+                </div>
+                <div className="mt-5 grid grid-cols-3 gap-2 text-center">
+                  {[
+                    { l: "Retention", v: "86%" },
+                    { l: "Streak", v: "9d" },
+                    { l: "Due", v: "18" },
+                  ].map((s) => (
+                    <div key={s.l} className="rounded-md border border-border bg-surface-raised p-2">
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground">{s.l}</p>
+                      <p className="text-base font-bold text-foreground">{s.v}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="mt-5 grid grid-cols-3 gap-2 text-center">
-                {[
-                  { l: "Retention", v: "86%" },
-                  { l: "Streak", v: "9d" },
-                  { l: "Due", v: "18" },
-                ].map((s) => (
-                  <div key={s.l} className="rounded-md border border-border bg-surface-raised p-2">
-                    <p className="text-[10px] font-bold uppercase text-muted-foreground">{s.l}</p>
-                    <p className="text-base font-bold text-foreground">{s.v}</p>
-                  </div>
-                ))}
+
+              <div className="absolute -bottom-4 -left-6 hidden rounded-xl border border-border bg-card p-2.5 shadow-card md:block animate-float-y">
+                <div className="flex items-center gap-2 text-xs font-bold">
+                  <span className="grid size-7 place-items-center rounded-md bg-success text-success-foreground">
+                    <CheckCircle2 className="size-4" />
+                  </span>
+                  Marked known
+                </div>
+              </div>
+              <div className="absolute -top-5 -right-4 hidden rounded-xl border border-border bg-card px-3 py-2 shadow-card md:block animate-float-y-delayed">
+                <div className="flex items-center gap-2 text-xs font-bold">
+                  <Sparkles className="size-3.5 text-accent" /> +24 XP
+                </div>
               </div>
             </div>
-            <div className="absolute -bottom-6 -left-6 hidden rounded-xl border border-border bg-card p-3 shadow-card md:block animate-float-in">
-              <div className="flex items-center gap-2 text-xs font-bold">
-                <span className="grid size-7 place-items-center rounded-md bg-success text-success-foreground">
-                  <CheckCircle2 className="size-4" />
+          </div>
+        </div>
+
+        {/* Marquee strip */}
+        <div className="relative mt-16 overflow-hidden rounded-2xl border border-border bg-card/60 py-4 backdrop-blur">
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-background to-transparent" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-background to-transparent" />
+          <div className="flex w-max animate-marquee gap-10 px-6 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            {[...Array(2)].flatMap((_, i) =>
+              ["Spaced repetition", "30-day recovery", "Equations & code", "Streak tracking", "Keyboard shortcuts", "Dark mode", "Auto-save", "Version history"].map((t) => (
+                <span key={`${i}-${t}`} className="inline-flex items-center gap-2">
+                  <Sparkles className="size-3 text-primary" /> {t}
                 </span>
-                Marked as known
-              </div>
-            </div>
+              ))
+            )}
           </div>
         </div>
       </section>
