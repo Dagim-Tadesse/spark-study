@@ -133,6 +133,30 @@ export default {
           "0%": { transform: "rotate(0deg)" },
           "100%": { transform: "rotate(360deg)" },
         },
+        "float-y": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-14px)" },
+        },
+        tilt: {
+          "0%, 100%": { transform: "rotate(-2deg)" },
+          "50%": { transform: "rotate(2deg)" },
+        },
+        "gradient-x": {
+          "0%, 100%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+        },
+        marquee: {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
+        orbit: {
+          "0%": { transform: "rotate(0deg) translateX(120px) rotate(0deg)" },
+          "100%": { transform: "rotate(360deg) translateX(120px) rotate(-360deg)" },
+        },
+        blob: {
+          "0%, 100%": { borderRadius: "60% 40% 30% 70% / 60% 30% 70% 40%" },
+          "50%": { borderRadius: "30% 60% 70% 40% / 50% 60% 30% 60%" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -145,6 +169,13 @@ export default {
         "spin-slow": "spin-slow 18s linear infinite",
         drift: "drift 12s ease-in-out infinite",
         "drift-delayed": "drift 15s ease-in-out infinite reverse",
+        "float-y": "float-y 6s ease-in-out infinite",
+        "float-y-delayed": "float-y 7s ease-in-out infinite -2s",
+        "tilt": "tilt 9s ease-in-out infinite",
+        "gradient-x": "gradient-x 6s ease infinite",
+        "marquee": "marquee 28s linear infinite",
+        "orbit": "orbit 14s linear infinite",
+        "blob": "blob 14s ease-in-out infinite",
       },
     },
   },
