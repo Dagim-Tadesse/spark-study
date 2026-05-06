@@ -105,7 +105,13 @@ export default function Login() {
                   key={m}
                   role="tab"
                   aria-selected={mode === m}
-                  onClick={() => setMode(m)}
+                  onClick={() => {
+                    setMode(m);
+                    setEmail("");
+                    setPassword("");
+                    setName("");
+                    setShowPassword(false);
+                  }}
                   className={`rounded-sm px-3 py-2 text-sm font-bold transition ${
                     mode === m ? "bg-card text-foreground shadow-card" : "text-muted-foreground hover:text-foreground"
                   }`}
