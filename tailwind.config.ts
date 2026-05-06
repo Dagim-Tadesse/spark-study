@@ -177,7 +177,6 @@ export default {
         "orbit": "orbit 14s linear infinite",
         "blob": "blob 14s ease-in-out infinite",
       },
-      keyframes2: {},
     },
   },
   plugins: [require("tailwindcss-animate")],
