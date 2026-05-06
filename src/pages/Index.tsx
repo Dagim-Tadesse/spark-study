@@ -279,32 +279,47 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Tabs */}
-        <nav role="tablist" aria-label="Studio sections" className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 pb-2">
-          {tabs.map((t) => {
-            const active = tab === t.key;
-            return (
-              <button
-                key={t.key}
-                role="tab"
-                aria-selected={active}
-                aria-controls={`panel-${t.key}`}
-                onClick={() => setTab(t.key)}
-                className={`relative inline-flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm font-bold transition ${
-                  active
-                    ? "bg-primary text-primary-foreground shadow-soft"
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                }`}
-              >
-                <t.icon className="size-4" />
-                {t.label}
-              </button>
-            );
-          })}
-        </nav>
       </header>
 
-      <section className="relative z-10 mx-auto max-w-7xl px-4 py-6">
+      <div className="relative z-10 mx-auto flex max-w-7xl gap-4 px-4 py-6 pb-24 md:pb-6">
+        {/* Side tab rail (desktop) */}
+        <aside className="sticky top-24 hidden h-fit w-52 shrink-0 md:block">
+          <nav
+            role="tablist"
+            aria-orientation="vertical"
+            aria-label="Studio sections"
+            className="flex flex-col gap-1 rounded-2xl border border-border bg-card/80 p-2 shadow-soft backdrop-blur"
+          >
+            {tabs.map((t) => {
+              const active = tab === t.key;
+              return (
+                <button
+                  key={t.key}
+                  role="tab"
+                  aria-selected={active}
+                  aria-controls={`panel-${t.key}`}
+                  onClick={() => setTab(t.key)}
+                  className={`group relative inline-flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-bold transition-all duration-300 ${
+                    active
+                      ? "bg-primary text-primary-foreground shadow-soft translate-x-0.5"
+                      : "text-muted-foreground hover:bg-secondary hover:text-foreground hover:translate-x-0.5"
+                  }`}
+                >
+                  <span
+                    className={`absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-primary-foreground/80 transition-all duration-300 ${
+                      active ? "opacity-100" : "opacity-0 -translate-x-2"
+                    }`}
+                    aria-hidden="true"
+                  />
+                  <t.icon className="size-4 transition-transform group-hover:scale-110" />
+                  {t.label}
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
+
+        <section className="min-w-0 flex-1">
         {/* Autosave bar */}
         <div className="mb-4 flex items-center justify-between rounded-md border border-border bg-card/80 px-3 py-2 text-xs backdrop-blur">
           <span className="inline-flex items-center gap-2 font-semibold text-success">
@@ -767,9 +782,113 @@ const Index = () => {
                 ))}
               </div>
             </div>
+
+            {/* How to use */}
+            <div className="rounded-2xl border border-border bg-card/90 p-6 shadow-card">
+              <p className="text-xs font-black uppercase tracking-wider text-primary">Getting started</p>
+              <h3 className="mt-2 font-display text-2xl font-bold">How to use MLFI in 5 minutes</h3>
+              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+                A quick tour for new learners — follow these steps to go from empty workspace to your
+                first study session.
+              </p>
+
+              <ol className="mt-6 grid gap-4 md:grid-cols-2">
+                {[
+                  {
+                    n: "1",
+                    title: "Create a deck",
+                    body: "Open the Dashboard tab and click New deck. Decks group related cards (e.g. Biology, Spanish verbs).",
+                  },
+                  {
+                    n: "2",
+                    title: "Add cards in the Editor",
+                    body: "Switch to Editor, hit New card, then write the Front (question) and Back (answer). Pick a template like Formula or Q&A.",
+                  },
+                  {
+                    n: "3",
+                    title: "Use rich tools",
+                    body: "Use the toolbar for equations, lists, image cues and emphasis. Every change is auto-saved and versioned.",
+                  },
+                  {
+                    n: "4",
+                    title: "Study with flip cards",
+                    body: "Open the Study tab. Tap the card or press F to flip. Mark Know or Review again — your retention and streak update live.",
+                  },
+                  {
+                    n: "5",
+                    title: "Stay safe",
+                    body: "Deleted cards live in the Safety tab's recovery bin for 30 days. Restore old edits from version history any time.",
+                  },
+                  {
+                    n: "6",
+                    title: "Track progress",
+                    body: "Return to the Dashboard for retention %, streak and the mastery ring across all decks.",
+                  },
+                ].map((s, i) => (
+                  <li
+                    key={s.n}
+                    style={{ animationDelay: `${i * 60}ms` }}
+                    className="animate-fade-in-up flex gap-3 rounded-xl border border-border bg-surface-tinted p-4"
+                  >
+                    <span className="grid size-8 shrink-0 place-items-center rounded-md bg-gradient-primary text-sm font-black text-primary-foreground shadow-soft">
+                      {s.n}
+                    </span>
+                    <div>
+                      <p className="font-bold">{s.title}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">{s.body}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-md border border-border bg-card p-3 text-sm">
+                  <p className="font-bold">Keyboard shortcuts</p>
+                  <p className="mt-1 text-muted-foreground">
+                    <kbd className="rounded border border-border px-1.5 font-mono text-xs">F</kbd> flip ·{" "}
+                    <kbd className="rounded border border-border px-1.5 font-mono text-xs">N</kbd> next card
+                  </p>
+                </div>
+                <div className="rounded-md border border-border bg-card p-3 text-sm">
+                  <p className="font-bold">Accessibility</p>
+                  <p className="mt-1 text-muted-foreground">
+                    Full ARIA tablist, dark mode, motion-reduce support and visible focus rings.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
-      </section>
+        </section>
+      </div>
+
+      {/* Mobile bottom tab bar */}
+      <nav
+        role="tablist"
+        aria-label="Studio sections (mobile)"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-card/95 px-2 py-2 backdrop-blur-xl shadow-[0_-4px_24px_-10px_rgba(0,0,0,0.15)] md:hidden"
+      >
+        <div className="mx-auto flex max-w-md items-center justify-around">
+          {tabs.map((t) => {
+            const active = tab === t.key;
+            return (
+              <button
+                key={t.key}
+                role="tab"
+                aria-selected={active}
+                aria-controls={`panel-${t.key}`}
+                onClick={() => setTab(t.key)}
+                className={`flex flex-col items-center gap-1 rounded-md px-2 py-1.5 text-[10px] font-bold uppercase tracking-tight transition-all duration-300 ${
+                  active ? "text-primary scale-110" : "text-muted-foreground"
+                }`}
+              >
+                <t.icon className={`size-5 transition-transform ${active ? "animate-scale-in" : ""}`} />
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+      </nav>
     </main>
   );
 };
