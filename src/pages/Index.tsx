@@ -782,6 +782,81 @@ const Index = () => {
                 ))}
               </div>
             </div>
+
+            {/* How to use */}
+            <div className="rounded-2xl border border-border bg-card/90 p-6 shadow-card">
+              <p className="text-xs font-black uppercase tracking-wider text-primary">Getting started</p>
+              <h3 className="mt-2 font-display text-2xl font-bold">How to use MLFI in 5 minutes</h3>
+              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+                A quick tour for new learners — follow these steps to go from empty workspace to your
+                first study session.
+              </p>
+
+              <ol className="mt-6 grid gap-4 md:grid-cols-2">
+                {[
+                  {
+                    n: "1",
+                    title: "Create a deck",
+                    body: "Open the Dashboard tab and click New deck. Decks group related cards (e.g. Biology, Spanish verbs).",
+                  },
+                  {
+                    n: "2",
+                    title: "Add cards in the Editor",
+                    body: "Switch to Editor, hit New card, then write the Front (question) and Back (answer). Pick a template like Formula or Q&A.",
+                  },
+                  {
+                    n: "3",
+                    title: "Use rich tools",
+                    body: "Use the toolbar for equations, lists, image cues and emphasis. Every change is auto-saved and versioned.",
+                  },
+                  {
+                    n: "4",
+                    title: "Study with flip cards",
+                    body: "Open the Study tab. Tap the card or press F to flip. Mark Know or Review again — your retention and streak update live.",
+                  },
+                  {
+                    n: "5",
+                    title: "Stay safe",
+                    body: "Deleted cards live in the Safety tab's recovery bin for 30 days. Restore old edits from version history any time.",
+                  },
+                  {
+                    n: "6",
+                    title: "Track progress",
+                    body: "Return to the Dashboard for retention %, streak and the mastery ring across all decks.",
+                  },
+                ].map((s, i) => (
+                  <li
+                    key={s.n}
+                    style={{ animationDelay: `${i * 60}ms` }}
+                    className="animate-fade-in-up flex gap-3 rounded-xl border border-border bg-surface-tinted p-4"
+                  >
+                    <span className="grid size-8 shrink-0 place-items-center rounded-md bg-gradient-primary text-sm font-black text-primary-foreground shadow-soft">
+                      {s.n}
+                    </span>
+                    <div>
+                      <p className="font-bold">{s.title}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">{s.body}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-md border border-border bg-card p-3 text-sm">
+                  <p className="font-bold">Keyboard shortcuts</p>
+                  <p className="mt-1 text-muted-foreground">
+                    <kbd className="rounded border border-border px-1.5 font-mono text-xs">F</kbd> flip ·{" "}
+                    <kbd className="rounded border border-border px-1.5 font-mono text-xs">N</kbd> next card
+                  </p>
+                </div>
+                <div className="rounded-md border border-border bg-card p-3 text-sm">
+                  <p className="font-bold">Accessibility</p>
+                  <p className="mt-1 text-muted-foreground">
+                    Full ARIA tablist, dark mode, motion-reduce support and visible focus rings.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
         </section>
