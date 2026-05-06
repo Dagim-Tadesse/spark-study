@@ -279,32 +279,47 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Tabs */}
-        <nav role="tablist" aria-label="Studio sections" className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 pb-2">
-          {tabs.map((t) => {
-            const active = tab === t.key;
-            return (
-              <button
-                key={t.key}
-                role="tab"
-                aria-selected={active}
-                aria-controls={`panel-${t.key}`}
-                onClick={() => setTab(t.key)}
-                className={`relative inline-flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm font-bold transition ${
-                  active
-                    ? "bg-primary text-primary-foreground shadow-soft"
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                }`}
-              >
-                <t.icon className="size-4" />
-                {t.label}
-              </button>
-            );
-          })}
-        </nav>
       </header>
 
-      <section className="relative z-10 mx-auto max-w-7xl px-4 py-6">
+      <div className="relative z-10 mx-auto flex max-w-7xl gap-4 px-4 py-6 pb-24 md:pb-6">
+        {/* Side tab rail (desktop) */}
+        <aside className="sticky top-24 hidden h-fit w-52 shrink-0 md:block">
+          <nav
+            role="tablist"
+            aria-orientation="vertical"
+            aria-label="Studio sections"
+            className="flex flex-col gap-1 rounded-2xl border border-border bg-card/80 p-2 shadow-soft backdrop-blur"
+          >
+            {tabs.map((t) => {
+              const active = tab === t.key;
+              return (
+                <button
+                  key={t.key}
+                  role="tab"
+                  aria-selected={active}
+                  aria-controls={`panel-${t.key}`}
+                  onClick={() => setTab(t.key)}
+                  className={`group relative inline-flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-bold transition-all duration-300 ${
+                    active
+                      ? "bg-primary text-primary-foreground shadow-soft translate-x-0.5"
+                      : "text-muted-foreground hover:bg-secondary hover:text-foreground hover:translate-x-0.5"
+                  }`}
+                >
+                  <span
+                    className={`absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-primary-foreground/80 transition-all duration-300 ${
+                      active ? "opacity-100" : "opacity-0 -translate-x-2"
+                    }`}
+                    aria-hidden="true"
+                  />
+                  <t.icon className="size-4 transition-transform group-hover:scale-110" />
+                  {t.label}
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
+
+        <section className="min-w-0 flex-1">
         {/* Autosave bar */}
         <div className="mb-4 flex items-center justify-between rounded-md border border-border bg-card/80 px-3 py-2 text-xs backdrop-blur">
           <span className="inline-flex items-center gap-2 font-semibold text-success">
