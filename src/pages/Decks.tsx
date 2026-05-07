@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus,
   Search,
@@ -11,13 +11,18 @@ import {
   Image,
   Volume2,
   LayoutGrid,
-  BookOpen
+  BookOpen,
+  MoreVertical,
+  Edit2,
+  Copy,
+  FolderInput
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { deckService, Deck } from "../services/deckService";
 import { cardService, Card } from "../services/cardService";
 import Layout from "../components/Layout";
 import { cn } from "@/lib/utils";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const editorTools = [
   { icon: Type, action: "type", label: "Key term" },
@@ -39,9 +44,42 @@ const Decks = () => {
   const [autosaveText, setAutosaveText] = useState("Up to date");
   const [showSafety, setShowSafety] = useState(false);
 
+  // Deck editing state
+  const [editingDeckId, setEditingDeckId] = useState<string | null>(null);
+  const [editingDeckName, setEditingDeckName] = useState("");
+
   // Local state for immediate typing feedback
   const [localFront, setLocalFront] = useState("");
   const [localBack, setLocalBack] = useState("");
+  const [localTag, setLocalTag] = useState("");
+  const [showMoveDialog, setShowMoveDialog] = useState(false);
+
+  // Autosave references to fix debounce and flush on unmount
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingSaveRef = useRef<{ id: string; updates: Partial<Card> } | null>(null);
+
+  // Handle beforeunload warning
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (pendingSaveRef.current) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
+
+  // Flush on unmount
+  useEffect(() => {
+    return () => {
+      if (pendingSaveRef.current) {
+        const pending = pendingSaveRef.current;
+        cardService.updateCard(pending.id, pending.updates).catch(console.error);
+        pendingSaveRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -61,6 +99,7 @@ const Decks = () => {
             setSelectedCardId(firstCard.id);
             setLocalFront(firstCard.front);
             setLocalBack(firstCard.back);
+            setLocalTag(firstCard.tag || "");
           }
         }
       } catch (error) {
@@ -75,48 +114,85 @@ const Decks = () => {
   const deckCards = useMemo(() => cards.filter(c => c.deck_id === selectedDeckId), [cards, selectedDeckId]);
   const filteredDecks = useMemo(() => decks.filter(d => d.name.toLowerCase().includes(searchTerm.toLowerCase())), [decks, searchTerm]);
 
-  const handleSelectDeck = (deckId: string) => {
+  const handleSelectDeck = (deckId: string | null) => {
+    if (!deckId) {
+      setSelectedDeckId(null);
+      setSelectedCardId(null);
+      setLocalFront("");
+      setLocalBack("");
+      setShowSafety(false);
+      return;
+    }
     setSelectedDeckId(deckId);
     const firstCard = cards.find(c => c.deck_id === deckId);
     if (firstCard) {
       setSelectedCardId(firstCard.id);
       setLocalFront(firstCard.front);
       setLocalBack(firstCard.back);
+      setLocalTag(firstCard.tag || "");
     } else {
       setSelectedCardId(null);
       setLocalFront("");
       setLocalBack("");
+      setLocalTag("");
     }
     setShowSafety(false);
+    setShowMoveDialog(false);
   };
 
   const handleSelectCard = (card: Card) => {
+    if (pendingSaveRef.current && pendingSaveRef.current.id !== card.id) {
+      // Flush previous save before switching if switching cards rapidly
+      const pending = pendingSaveRef.current;
+      cardService.updateCard(pending.id, pending.updates).catch(console.error);
+      pendingSaveRef.current = null;
+    }
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+
     setSelectedCardId(card.id);
     setLocalFront(card.front);
     setLocalBack(card.back);
+    setLocalTag(card.tag || "");
     setShowSafety(false);
+    setShowMoveDialog(false);
   };
 
-  const handleUpdateContent = (updates: { front?: string; back?: string }) => {
+  const handleUpdateContent = (updates: { front?: string; back?: string; tag?: string }) => {
     if (!selectedCardId) return;
-    
+
     if (updates.front !== undefined) setLocalFront(updates.front);
     if (updates.back !== undefined) setLocalBack(updates.back);
+    if (updates.tag !== undefined) setLocalTag(updates.tag);
 
     setAutosaveText("Saving...");
     // Update local cards list
     setCards(prev => prev.map(c => c.id === selectedCardId ? { ...c, ...updates } : c));
-    
-    // Debounced-style save
-    const timer = setTimeout(async () => {
+
+    // Calculate final update payload from the current known state + updates
+    const currentCard = cards.find(c => c.id === selectedCardId);
+    const fullUpdates = {
+      front: updates.front !== undefined ? updates.front : (currentCard?.front || ""),
+      back: updates.back !== undefined ? updates.back : (currentCard?.back || ""),
+      tag: updates.tag !== undefined ? updates.tag : (currentCard?.tag || ""),
+    };
+
+    pendingSaveRef.current = { id: selectedCardId, updates: fullUpdates };
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+
+    // Properly debounced save
+    saveTimeoutRef.current = setTimeout(async () => {
+      const pending = pendingSaveRef.current;
+      if (!pending) return;
       try {
-        await cardService.updateCard(selectedCardId, updates);
-        setAutosaveText("Saved");
+        await cardService.updateCard(pending.id, pending.updates);
+        if (pendingSaveRef.current?.id === pending.id) {
+          setAutosaveText("Saved");
+          pendingSaveRef.current = null;
+        }
       } catch (e) {
         setAutosaveText("Sync error");
       }
     }, 1000);
-    return () => clearTimeout(timer);
   };
 
   const addCard = async () => {
@@ -141,6 +217,45 @@ const Decks = () => {
     }
   };
 
+  const duplicateCard = async () => {
+    if (!user || !selectedCardId || !selectedDeckId) return;
+    const currentCard = cards.find(c => c.id === selectedCardId);
+    if (!currentCard) return;
+    setAutosaveText("Duplicating...");
+    try {
+      const newCard = await cardService.createCard({
+        deck_id: selectedDeckId,
+        user_id: user.id,
+        template: currentCard.template,
+        front: currentCard.front,
+        back: currentCard.back,
+        tag: currentCard.tag,
+        next_review: Date.now(),
+        interval: 0,
+      });
+      setCards(prev => [...prev, newCard]);
+      handleSelectCard(newCard);
+      setAutosaveText("Created");
+    } catch (e) {
+      setAutosaveText("Error duplicating");
+    }
+  };
+
+  const moveCard = async (targetDeckId: string) => {
+    if (!selectedCardId || !targetDeckId || targetDeckId === selectedDeckId) return;
+    try {
+      await cardService.updateCard(selectedCardId, { deck_id: targetDeckId });
+      const updated = cards.map(c => c.id === selectedCardId ? { ...c, deck_id: targetDeckId } : c);
+      setCards(updated);
+      const nextCard = updated.find(c => c.deck_id === selectedDeckId);
+      if (nextCard) handleSelectCard(nextCard);
+      else handleSelectDeck(selectedDeckId);
+      setShowMoveDialog(false);
+    } catch (e) {
+      console.error("Error moving card");
+    }
+  };
+
   const addDeck = async () => {
     if (!user) return;
     try {
@@ -149,6 +264,42 @@ const Decks = () => {
       handleSelectDeck(newDeck.id);
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const startEditingDeck = (deck: Deck, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingDeckId(deck.id);
+    setEditingDeckName(deck.name);
+  };
+
+  const saveDeckName = async () => {
+    if (!editingDeckId || !editingDeckName.trim()) {
+      setEditingDeckId(null);
+      return;
+    }
+    const id = editingDeckId;
+    const newName = editingDeckName.trim();
+    setEditingDeckId(null);
+    setDecks(prev => prev.map(d => d.id === id ? { ...d, name: newName } : d));
+    try {
+      await deckService.updateDeck(id, { name: newName });
+    } catch (e) {
+      console.error("Error renaming deck", e);
+    }
+  };
+
+  const confirmDeleteDeck = async (deckId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this deck? All its cards will also be lost.")) return;
+    try {
+      await deckService.deleteDeck(deckId);
+      setDecks(prev => prev.filter(d => d.id !== deckId));
+      if (selectedDeckId === deckId) {
+        handleSelectDeck(decks.find(d => d.id !== deckId)?.id || null);
+      }
+    } catch (e) {
+      console.error("Error deleting deck", e);
     }
   };
 
@@ -164,6 +315,7 @@ const Decks = () => {
         setSelectedCardId(null);
         setLocalFront("");
         setLocalBack("");
+        setLocalTag("");
       }
       setShowSafety(false);
       setAutosaveText("Deleted");
@@ -184,21 +336,56 @@ const Decks = () => {
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            <input 
+            <input
               type="text" placeholder="Search decks..." value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-lg border border-border bg-card outline-none" 
+              className="w-full pl-10 pr-4 py-2 rounded-lg border border-border bg-card outline-none"
             />
           </div>
           <div className="space-y-2">
             {filteredDecks.map(deck => (
-              <button
-                key={deck.id} onClick={() => handleSelectDeck(deck.id)}
-                className={cn("w-full text-left p-4 rounded-xl border transition-all", selectedDeckId === deck.id ? "border-primary bg-primary/5" : "border-border bg-card")}
-              >
-                <p className="font-bold text-sm truncate">{deck.name}</p>
-                <p className="text-[10px] text-muted-foreground uppercase font-black mt-1">{cards.filter(c => c.deck_id === deck.id).length} Cards</p>
-              </button>
+              <div key={deck.id} className="relative group">
+                <button
+                  onClick={() => handleSelectDeck(deck.id)}
+                  className={cn("w-full text-left p-4 rounded-xl border transition-all", selectedDeckId === deck.id ? "border-primary bg-primary/5" : "border-border bg-card hover:border-primary/30")}
+                >
+                  {editingDeckId === deck.id ? (
+                    <input
+                      autoFocus
+                      type="text"
+                      value={editingDeckName}
+                      onChange={(e) => setEditingDeckName(e.target.value)}
+                      onBlur={saveDeckName}
+                      onKeyDown={(e) => e.key === 'Enter' && saveDeckName()}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-full bg-background border border-primary rounded px-2 py-1 text-sm font-bold outline-none"
+                    />
+                  ) : (
+                    <p className="font-bold text-sm truncate pr-6">{deck.name}</p>
+                  )}
+                  <p className="text-[10px] text-muted-foreground uppercase font-black mt-1">{cards.filter(c => c.deck_id === deck.id).length} Cards</p>
+                </button>
+
+                <div className={cn("absolute right-2 top-1/2 -translate-y-1/2 transition-opacity", selectedDeckId === deck.id ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button onClick={(e) => e.stopPropagation()} className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground">
+                        <MoreVertical className="size-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-40">
+                      <DropdownMenuItem onClick={(e) => startEditingDeck(deck, e as any)}>
+                        <Edit2 className="size-4 mr-2" />
+                        Rename Deck
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={(e) => confirmDeleteDeck(deck.id, e as any)}>
+                        <Trash2 className="size-4 mr-2" />
+                        Delete Deck
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
             ))}
           </div>
         </aside>
@@ -217,9 +404,38 @@ const Decks = () => {
                 <div className="bg-card border border-border rounded-xl p-6 flex flex-col gap-4 shadow-sm overflow-hidden">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-black uppercase text-muted-foreground">Editor</span>
-                    <div className="flex items-center gap-3">
-                      <span className="text-[10px] font-bold text-success uppercase tracking-wider">{autosaveText}</span>
-                      <button onClick={() => setShowSafety(true)} className="text-destructive hover:bg-destructive/10 p-2 rounded-md"><Trash2 className="size-4" /></button>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-success uppercase tracking-wider pr-2">{autosaveText}</span>
+
+                      {selectedCardId && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground">
+                              <MoreVertical className="size-4" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem onClick={duplicateCard}>
+                              <Copy className="size-4 mr-2" />
+                              Duplicate Card
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                              setShowMoveDialog(true);
+                              setShowSafety(false);
+                            }}>
+                              <FolderInput className="size-4 mr-2" />
+                              Move to Deck...
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => {
+                              setShowSafety(true);
+                              setShowMoveDialog(false);
+                            }}>
+                              <Trash2 className="size-4 mr-2" />
+                              Delete Card
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </div>
                   </div>
 
@@ -233,6 +449,29 @@ const Decks = () => {
                     </div>
                   )}
 
+                  {showMoveDialog && (
+                    <div className="p-3 bg-secondary/30 border border-border rounded-lg flex flex-col gap-2">
+                      <span className="text-xs font-bold mb-1">Move card to deck:</span>
+                      <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                        {decks.filter(d => d.id !== selectedDeckId).map(deck => (
+                          <button
+                            key={deck.id}
+                            onClick={() => moveCard(deck.id)}
+                            className="px-3 py-1.5 bg-card border border-border hover:border-primary text-xs font-bold rounded-md transition-colors"
+                          >
+                            {deck.name}
+                          </button>
+                        ))}
+                        {decks.filter(d => d.id !== selectedDeckId).length === 0 && (
+                          <span className="text-xs text-muted-foreground">No other decks available.</span>
+                        )}
+                      </div>
+                      <div className="mt-1 flex justify-end">
+                        <button onClick={() => setShowMoveDialog(false)} className="px-4 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground text-[10px] font-bold rounded-md transition-colors">Cancel</button>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex gap-2 pb-2">
                     {editorTools.map(t => (
                       <button key={t.label} className="p-2.5 rounded-lg bg-secondary text-muted-foreground hover:text-primary transition-all"><t.icon className="size-4" /></button>
@@ -240,10 +479,21 @@ const Decks = () => {
                   </div>
 
                   <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="flex flex-col gap-2">
+                      <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Tags</label>
+                      <input
+                        type="text"
+                        value={localTag}
+                        onChange={(e) => handleUpdateContent({ tag: e.target.value })}
+                        disabled={!selectedCardId}
+                        className="w-full p-2.5 rounded-lg bg-secondary/30 border border-border focus:border-primary outline-none text-sm font-medium"
+                        placeholder="Enter tags (e.g. math, easy)"
+                      />
+                    </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Front Side</label>
-                      <textarea 
-                        value={localFront} 
+                      <textarea
+                        value={localFront}
                         onChange={(e) => handleUpdateContent({ front: e.target.value })}
                         disabled={!selectedCardId}
                         className="w-full h-32 p-4 rounded-xl bg-secondary/30 border border-border focus:border-primary outline-none resize-none text-sm font-medium"
@@ -252,8 +502,8 @@ const Decks = () => {
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Back Side</label>
-                      <textarea 
-                        value={localBack} 
+                      <textarea
+                        value={localBack}
                         onChange={(e) => handleUpdateContent({ back: e.target.value })}
                         disabled={!selectedCardId}
                         className="w-full h-32 p-4 rounded-xl bg-secondary/30 border border-border focus:border-primary outline-none resize-none text-sm font-medium"
@@ -267,7 +517,7 @@ const Decks = () => {
                   <span className="text-xs font-black uppercase text-muted-foreground mb-4">Deck Cards</span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto pr-2 custom-scrollbar">
                     {deckCards.map(c => (
-                      <button 
+                      <button
                         key={c.id} onClick={() => handleSelectCard(c)}
                         className={cn("p-4 rounded-xl border text-left transition-all", selectedCardId === c.id ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border hover:border-primary/30")}
                       >
