@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabaseClient';
+import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
 
 export interface Profile {
   id: string;
@@ -11,8 +11,11 @@ export interface Profile {
 
 export const profileService = {
   async getProfile(userId: string) {
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase is not configured');
+    }
     const { data, error } = await supabase
-      .from('profiles')
+      .from('spark_study_profiles')
       .select('*')
       .eq('id', userId)
       .single();
@@ -37,8 +40,11 @@ export const profileService = {
   },
 
   async updateProfile(userId: string, updates: Partial<Profile>) {
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase is not configured');
+    }
     const { data, error } = await supabase
-      .from('profiles')
+      .from('spark_study_profiles')
       .upsert({ id: userId, ...updates }) // Use upsert to handle missing profiles
       .select()
       .single();

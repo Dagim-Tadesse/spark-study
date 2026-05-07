@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { isSupabaseConfigured, supabase } from "@/lib/supabaseClient";
 
 interface AuthUser {
   id: string;
@@ -7,18 +8,74 @@ interface AuthUser {
 
 interface AuthContextValue {
   user: AuthUser | null;
-  signIn: (email: string) => void;
-  signOut: () => void;
+  loading: boolean;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+/**
+ * AuthProvider wraps the app with Supabase auth.
+ * On mount, it hydrates the user session from Supabase' getSession() / onAuthStateChange.
+ * If Supabase is not configured (empty URL/key), it silently falls back to local-only mode.
+ */
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    const savedUser = localStorage.getItem("spark-study-user");
-    return savedUser ? (JSON.parse(savedUser) as AuthUser) : null;
-  });
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [loading, setLoading] = useState(true);
 
+  // Check if Supabase is configured
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) {
+      // Supabase not configured; fall back to localStorage
+      const savedUser = localStorage.getItem("spark-study-user");
+      if (savedUser) {
+        setUser(JSON.parse(savedUser) as AuthUser);
+      }
+      setLoading(false);
+      return;
+    }
+
+    // Supabase configured; hydrate session
+    (async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session?.user) {
+          setUser({
+            id: session.user.id,
+            email: session.user.email || "",
+          });
+        }
+      } catch (error) {
+        console.error("Failed to get session:", error);
+      } finally {
+        setLoading(false);
+      }
+    })();
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          email: session.user.email || "",
+        });
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, [isSupabaseConfigured]);
+
+  // Save user to localStorage as a fallback
   useEffect(() => {
     if (user) {
       localStorage.setItem("spark-study-user", JSON.stringify(user));
@@ -27,15 +84,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
+  const signIn = async (email: string, password: string) => {
+    if (!isSupabaseConfigured || !supabase) {
+      // Local mode: just accept the email
+      setUser({ id: email || "local-user", email: email || "user@spark.study" });
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) throw error;
+  };
+
+  const signUp = async (email: string, password: string) => {
+    if (!isSupabaseConfigured || !supabase) {
+      // Local mode: just accept the email
+      setUser({ id: email || "local-user", email: email || "user@spark.study" });
+      return;
+    }
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+    if (error) throw error;
+  };
+
+  const signOut = async () => {
+    if (isSupabaseConfigured && supabase) {
+      await supabase.auth.signOut();
+    }
+    setUser(null);
+  };
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
-      signIn: (email: string) => {
-        setUser({ id: email || "local-user", email: email || "user@spark.study" });
-      },
-      signOut: () => setUser(null),
+      loading,
+      signIn,
+      signUp,
+      signOut,
     }),
-    [user],
+    [user, loading],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

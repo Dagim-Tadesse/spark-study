@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabaseClient';
+import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
 
 export interface Deck {
   id: string;
@@ -10,8 +10,11 @@ export interface Deck {
 
 export const deckService = {
   async getDecks(userId: string) {
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase is not configured');
+    }
     const { data, error } = await supabase
-      .from('decks')
+      .from('spark_study_decks')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
@@ -21,8 +24,11 @@ export const deckService = {
   },
 
   async createDeck(userId: string, name: string, color: string = 'bg-primary') {
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase is not configured');
+    }
     const { data, error } = await supabase
-      .from('decks')
+      .from('spark_study_decks')
       .insert([{ user_id: userId, name, color }])
       .select()
       .single();
@@ -32,8 +38,11 @@ export const deckService = {
   },
 
   async updateDeck(id: string, updates: Partial<Deck>) {
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase is not configured');
+    }
     const { data, error } = await supabase
-      .from('decks')
+      .from('spark_study_decks')
       .update(updates)
       .eq('id', id)
       .select()
@@ -44,8 +53,11 @@ export const deckService = {
   },
 
   async deleteDeck(id: string) {
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase is not configured');
+    }
     const { error } = await supabase
-      .from('decks')
+      .from('spark_study_decks')
       .delete()
       .eq('id', id);
 

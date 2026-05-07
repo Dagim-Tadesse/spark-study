@@ -15,30 +15,29 @@ create extension if not exists "pgcrypto";
 -- One row per authenticated user. Holds learning stats shown in the UI
 -- (streak, retention %, total reviews).
 -- =========================================================================
-create table if not exists public.profiles (
-  id                  uuid primary key references auth.users(id) on delete cascade,
-  display_name        text,
-  streak              integer not null default 0,
-  last_study_date     date,
-  total_reviews       integer not null default 0,
-  successful_reviews  integer not null default 0,
-  created_at          timestamptz not null default now(),
-  updated_at          timestamptz not null default now()
+create table if not exists public.spark_study_profiles (
+    id uuid primary key references auth.users (id) on delete cascade,
+    display_name text,
+    streak integer not null default 0,
+    last_study_date date,
+    total_reviews integer not null default 0,
+    successful_reviews integer not null default 0,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now()
 );
 
-alter table public.profiles enable row level security;
+alter table public.spark_study_profiles enable row level security;
 
-create policy "Profiles are viewable by owner"
-  on public.profiles for select
-  using (auth.uid() = id);
+create policy "Profiles are viewable by owner" on public.spark_study_profiles for
+select using (auth.uid () = id);
 
-create policy "Profiles are insertable by owner"
-  on public.profiles for insert
-  with check (auth.uid() = id);
+create policy "Profiles are insertable by owner" on public.spark_study_profiles for
+insert
+with
+    check (auth.uid () = id);
 
-create policy "Profiles are updatable by owner"
-  on public.profiles for update
-  using (auth.uid() = id);
+create policy "Profiles are updatable by owner" on public.spark_study_profiles for
+update using (auth.uid () = id);
 
 -- Auto-create a profile row on signup
 create or replace function public.handle_new_user()
@@ -48,13 +47,14 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, display_name)
+  insert into public.spark_study_profiles (id, display_name)
   values (new.id, coalesce(new.raw_user_meta_data->>'display_name', new.email));
   return new;
 end;
 $$;
 
 drop trigger if exists on_auth_user_created on auth.users;
+
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
@@ -64,28 +64,32 @@ create trigger on_auth_user_created
 -- A user-owned collection of flashcards. The frontend stores `color`
 -- as a tailwind utility class (e.g. "bg-primary").
 -- =========================================================================
-create table if not exists public.decks (
-  id          uuid primary key default gen_random_uuid(),
-  user_id     uuid not null references auth.users(id) on delete cascade,
-  name        text not null,
-  color       text not null default 'bg-primary',
-  progress    integer not null default 0 check (progress between 0 and 100),
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now()
+create table if not exists public.spark_study_decks (
+    id uuid primary key default gen_random_uuid (),
+    user_id uuid not null references auth.users (id) on delete cascade,
+    name text not null,
+    color text not null default 'bg-primary',
+    progress integer not null default 0 check (progress between 0 and 100),
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now()
 );
 
-create index if not exists decks_user_id_idx on public.decks(user_id);
+create index if not exists spark_study_decks_user_id_idx on public.spark_study_decks (user_id);
 
-alter table public.decks enable row level security;
+alter table public.spark_study_decks enable row level security;
 
-create policy "Decks selectable by owner"
-  on public.decks for select using (auth.uid() = user_id);
-create policy "Decks insertable by owner"
-  on public.decks for insert with check (auth.uid() = user_id);
-create policy "Decks updatable by owner"
-  on public.decks for update using (auth.uid() = user_id);
-create policy "Decks deletable by owner"
-  on public.decks for delete using (auth.uid() = user_id);
+create policy "Decks selectable by owner" on public.spark_study_decks for
+select using (auth.uid () = user_id);
+
+create policy "Decks insertable by owner" on public.spark_study_decks for
+insert
+with
+    check (auth.uid () = user_id);
+
+create policy "Decks updatable by owner" on public.spark_study_decks for
+update using (auth.uid () = user_id);
+
+create policy "Decks deletable by owner" on public.spark_study_decks for delete using (auth.uid () = user_id);
 
 -- =========================================================================
 -- 3. CARDS
@@ -93,9 +97,9 @@ create policy "Decks deletable by owner"
 -- (Definition / Formula / Q&A / Diagram). `tags` is a string array.
 -- Soft-delete via `deleted_at` powers the 30-day recovery bin.
 -- =========================================================================
-create table if not exists public.cards (
+create table if not exists public.spark_study_cards (
   id          uuid primary key default gen_random_uuid(),
-  deck_id     uuid not null references public.decks(id) on delete cascade,
+  deck_id     uuid not null references public.spark_study_decks(id) on delete cascade,
   user_id     uuid not null references auth.users(id) on delete cascade,
   template    text not null default 'Q&A',
   front       text not null default '',
@@ -112,30 +116,37 @@ create table if not exists public.cards (
   updated_at  timestamptz not null default now()
 );
 
-create index if not exists cards_deck_id_idx     on public.cards(deck_id);
-create index if not exists cards_user_id_idx     on public.cards(user_id);
-create index if not exists cards_next_review_idx on public.cards(user_id, next_review)
-  where deleted_at is null;
+create index if not exists spark_study_cards_deck_id_idx on public.spark_study_cards (deck_id);
 
-alter table public.cards enable row level security;
+create index if not exists spark_study_cards_user_id_idx on public.spark_study_cards (user_id);
 
-create policy "Cards selectable by owner"
-  on public.cards for select using (auth.uid() = user_id);
-create policy "Cards insertable by owner"
-  on public.cards for insert with check (auth.uid() = user_id);
-create policy "Cards updatable by owner"
-  on public.cards for update using (auth.uid() = user_id);
-create policy "Cards deletable by owner"
-  on public.cards for delete using (auth.uid() = user_id);
+create index if not exists spark_study_cards_next_review_idx on public.spark_study_cards (user_id, next_review)
+where
+    deleted_at is null;
+
+alter table public.spark_study_cards enable row level security;
+
+create policy "Cards selectable by owner" on public.spark_study_cards for
+select using (auth.uid () = user_id);
+
+create policy "Cards insertable by owner" on public.spark_study_cards for
+insert
+with
+    check (auth.uid () = user_id);
+
+create policy "Cards updatable by owner" on public.spark_study_cards for
+update using (auth.uid () = user_id);
+
+create policy "Cards deletable by owner" on public.spark_study_cards for delete using (auth.uid () = user_id);
 
 -- =========================================================================
 -- 4. CARD_HISTORY
 -- Snapshots of edits, powering the Safety tab's "Version history".
 -- The frontend keeps the last ~20 snapshots per card.
 -- =========================================================================
-create table if not exists public.card_history (
+create table if not exists public.spark_study_card_history (
   id          uuid primary key default gen_random_uuid(),
-  card_id     uuid not null references public.cards(id) on delete cascade,
+  card_id     uuid not null references public.spark_study_cards(id) on delete cascade,
   user_id     uuid not null references auth.users(id) on delete cascade,
   front       text not null,
   back        text not null,
@@ -143,41 +154,47 @@ create table if not exists public.card_history (
   created_at  timestamptz not null default now()
 );
 
-create index if not exists card_history_card_id_idx on public.card_history(card_id, created_at desc);
+create index if not exists spark_study_card_history_card_id_idx on public.spark_study_card_history (card_id, created_at desc);
 
-alter table public.card_history enable row level security;
+alter table public.spark_study_card_history enable row level security;
 
-create policy "History selectable by owner"
-  on public.card_history for select using (auth.uid() = user_id);
-create policy "History insertable by owner"
-  on public.card_history for insert with check (auth.uid() = user_id);
-create policy "History deletable by owner"
-  on public.card_history for delete using (auth.uid() = user_id);
+create policy "History selectable by owner" on public.spark_study_card_history for
+select using (auth.uid () = user_id);
+
+create policy "History insertable by owner" on public.spark_study_card_history for
+insert
+with
+    check (auth.uid () = user_id);
+
+create policy "History deletable by owner" on public.spark_study_card_history for delete using (auth.uid () = user_id);
 
 -- =========================================================================
 -- 5. STUDY_EVENTS
 -- One row each time a user marks a card "Know" or "Review again".
 -- Powers retention %, streak and dashboard analytics.
 -- =========================================================================
-create type public.study_result as enum ('know', 'again');
+create type public.spark_study_result as enum ('know', 'again');
 
-create table if not exists public.study_events (
-  id          uuid primary key default gen_random_uuid(),
-  user_id     uuid not null references auth.users(id) on delete cascade,
-  card_id     uuid not null references public.cards(id) on delete cascade,
-  deck_id     uuid not null references public.decks(id) on delete cascade,
-  result      public.study_result not null,
-  reviewed_at timestamptz not null default now()
+create table if not exists public.spark_study_study_events (
+    id uuid primary key default gen_random_uuid (),
+    user_id uuid not null references auth.users (id) on delete cascade,
+    card_id uuid not null references public.spark_study_cards (id) on delete cascade,
+    deck_id uuid not null references public.spark_study_decks (id) on delete cascade,
+    result public.spark_study_result not null,
+    reviewed_at timestamptz not null default now()
 );
 
-create index if not exists study_events_user_idx on public.study_events(user_id, reviewed_at desc);
+create index if not exists spark_study_study_events_user_idx on public.spark_study_study_events (user_id, reviewed_at desc);
 
-alter table public.study_events enable row level security;
+alter table public.spark_study_study_events enable row level security;
 
-create policy "Events selectable by owner"
-  on public.study_events for select using (auth.uid() = user_id);
-create policy "Events insertable by owner"
-  on public.study_events for insert with check (auth.uid() = user_id);
+create policy "Events selectable by owner" on public.spark_study_study_events for
+select using (auth.uid () = user_id);
+
+create policy "Events insertable by owner" on public.spark_study_study_events for
+insert
+with
+    check (auth.uid () = user_id);
 
 -- =========================================================================
 -- 6. updated_at triggers
@@ -190,14 +207,17 @@ begin
 end;
 $$;
 
-drop trigger if exists touch_profiles on public.profiles;
-create trigger touch_profiles before update on public.profiles
+drop trigger if exists spark_study_touch_profiles on public.spark_study_profiles;
+
+create trigger spark_study_touch_profiles before update on public.spark_study_profiles
   for each row execute function public.touch_updated_at();
 
-drop trigger if exists touch_decks on public.decks;
-create trigger touch_decks before update on public.decks
+drop trigger if exists spark_study_touch_decks on public.spark_study_decks;
+
+create trigger spark_study_touch_decks before update on public.spark_study_decks
   for each row execute function public.touch_updated_at();
 
-drop trigger if exists touch_cards on public.cards;
-create trigger touch_cards before update on public.cards
+drop trigger if exists spark_study_touch_cards on public.spark_study_cards;
+
+create trigger spark_study_touch_cards before update on public.spark_study_cards
   for each row execute function public.touch_updated_at();

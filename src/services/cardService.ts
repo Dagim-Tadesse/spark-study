@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabaseClient';
+import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
 
 export interface Card {
   id: string;
@@ -15,8 +15,11 @@ export interface Card {
 
 export const cardService = {
   async getCards(userId: string) {
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase is not configured');
+    }
     const { data, error } = await supabase
-      .from('cards')
+      .from('spark_study_cards')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
@@ -26,8 +29,11 @@ export const cardService = {
   },
 
   async createCard(cardData: Omit<Card, 'id' | 'created_at'>) {
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase is not configured');
+    }
     const { data, error } = await supabase
-      .from('cards')
+      .from('spark_study_cards')
       .insert([cardData])
       .select()
       .single();
@@ -37,8 +43,11 @@ export const cardService = {
   },
 
   async updateCard(id: string, updates: Partial<Card>) {
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase is not configured');
+    }
     const { data, error } = await supabase
-      .from('cards')
+      .from('spark_study_cards')
       .update(updates)
       .eq('id', id)
       .select()
@@ -49,8 +58,11 @@ export const cardService = {
   },
 
   async deleteCard(id: string) {
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase is not configured');
+    }
     const { error } = await supabase
-      .from('cards')
+      .from('spark_study_cards')
       .delete()
       .eq('id', id);
 

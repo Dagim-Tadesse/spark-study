@@ -14,7 +14,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const { signIn, signUp } = useAuth();
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,12 +24,18 @@ export default function Login() {
       if (mode === "signup" && password.length < 6) {
         throw new Error("Password must be at least 6 characters");
       }
-      await new Promise((r) => setTimeout(r, 350));
-      signIn(email);
-      toast.success(mode === "signup" ? "Welcome aboard!" : "Welcome back!");
+
+      if (mode === "signup") {
+        await signUp(email, password);
+        toast.success("Welcome aboard! Check your email to verify your account.");
+      } else {
+        await signIn(email, password);
+        toast.success("Welcome back!");
+      }
       navigate("/app");
-    } catch (err: any) {
-      toast.error(err.message || "Something went wrong");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Something went wrong";
+      toast.error(message);
     } finally {
       setLoading(false);
     }

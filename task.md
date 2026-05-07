@@ -10,7 +10,6 @@ Below is the checklist to turn it into a usable system.
 
 ---
 
-
 ## 1) Define the product minimum (so development is not random)
 
 - [x] Decide the target: **single-user local app** (no accounts)
