@@ -157,4 +157,64 @@
   .rotate-y-180 {
     transform: rotateY(180deg);
   }
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+  .perspective-\[1200px\] {
+    perspective: 1200px;
+  }
 }
+
+/* Color-blind safe palette (Okabe-Ito inspired) + pattern support */
+.a11y-cb {
+  --primary: 202 100% 35%;        /* blue */
+  --primary-foreground: 0 0% 100%;
+  --accent: 28 100% 47%;          /* vermillion/orange */
+  --accent-foreground: 0 0% 100%;
+  --success: 165 100% 28%;        /* bluish green */
+  --success-foreground: 0 0% 100%;
+  --destructive: 348 83% 47%;     /* reddish purple */
+  --warning: 45 100% 45%;         /* yellow */
+  --study-front: 202 100% 35%;
+  --study-back: 165 100% 28%;
+}
+.a11y-cb.dark {
+  --primary: 202 90% 62%;
+  --accent: 28 100% 60%;
+  --success: 165 70% 45%;
+  --destructive: 348 80% 62%;
+  --study-front: 202 90% 62%;
+  --study-back: 165 70% 45%;
+}
+/* Add diagonal stripe pattern to status badges in CB mode for non-color cue */
+.a11y-cb .cb-pattern-success {
+  background-image: repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--success) / 0.18) 6px 8px);
+}
+.a11y-cb .cb-pattern-warn {
+  background-image: repeating-linear-gradient(-45deg, transparent 0 6px, hsl(var(--warning) / 0.22) 6px 8px);
+}
+.a11y-cb .cb-pattern-danger {
+  background-image: repeating-linear-gradient(0deg, transparent 0 6px, hsl(var(--destructive) / 0.2) 6px 8px);
+}
+
+/* Larger text */
+.a11y-lg { font-size: 17.5px; }
+.a11y-lg input, .a11y-lg textarea, .a11y-lg button { font-size: 1rem; }
+
+/* Reduce motion */
+.a11y-rm *, .a11y-rm *::before, .a11y-rm *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: hsl(var(--primary) / 0.5); }
