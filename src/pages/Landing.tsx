@@ -272,8 +272,8 @@ const Landing = () => {
               <div className="grid size-11 place-items-center rounded-md bg-gradient-primary text-primary-foreground shadow-soft transition group-hover:rotate-6">
                 <f.icon className="size-5" />
               </div>
-              <h4 className="mt-4 font-display text-lg font-bold">{f.title}</h4>
-              <p className="mt-2 text-sm text-muted-foreground">{f.text}</p>
+              <h4 className="mt-4 font-display text-base font-bold tracking-tight">{f.title}</h4>
+              <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">{f.text}</p>
             </article>
           ))}
         </div>
@@ -283,7 +283,7 @@ const Landing = () => {
 
       {/* Final CTA */}
       <section className="relative z-10 mx-auto max-w-4xl px-5 py-20 text-center">
-        <h3 className="font-display text-3xl font-bold md:text-5xl">Ready for your next study session?</h3>
+        <h3 className="font-display text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight">Ready for your next study session?</h3>
         <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
           Sign up in seconds, build your first deck and study without distractions.
         </p>
