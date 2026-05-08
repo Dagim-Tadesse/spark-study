@@ -15,6 +15,7 @@ import NotFound from "./pages/NotFound.tsx";
 import Login from "./pages/Login.tsx";
 import Decks from "./pages/Decks.tsx";
 import Study from "./pages/Study.tsx";
+import Dashboard from "./pages/Dashboard.tsx";
 import Help from "./pages/Help.tsx";
 import About from "./pages/About.tsx";
 
@@ -35,6 +36,14 @@ const App = () => (
                     <Routes>
                       <Route path="/" element={<Landing />} />
                       <Route path="/login" element={<Login />} />
+                      <Route
+                        path="/dashboard"
+                        element={
+                          <ProtectedRoute>
+                            <Dashboard />
+                          </ProtectedRoute>
+                        }
+                      />
                       <Route
                         path="/decks"
                         element={

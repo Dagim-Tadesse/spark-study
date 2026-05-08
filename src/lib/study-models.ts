@@ -51,8 +51,8 @@ export const defaultDecks: Deck[] = [
     progress: 54,
   },
   {
-    id: "deck-hci-principles",
-    name: "HCI Principles",
+    id: "deck-general-knowledge",
+    name: "General Knowledge",
     color: "bg-accent",
     progress: 88,
   },
@@ -69,12 +69,12 @@ export const defaultCards: Card[] = [
     history: [],
   },
   {
-    id: "card-hci-safety",
-    deckId: "deck-hci-principles",
+    id: "card-general-info",
+    deckId: "deck-general-knowledge",
     template: "Q&A",
-    front: "Which HCI principle prevents accidental data loss?",
-    back: "Safety: auto-save, confirmation prompts, undo/redo, and version history.",
-    tags: ["hci"],
+    front: "What is the capital of France?",
+    back: "Paris",
+    tags: ["general"],
     history: [],
   },
 ];

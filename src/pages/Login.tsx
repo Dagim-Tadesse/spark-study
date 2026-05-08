@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Brain, ArrowLeft, Sparkles, ShieldCheck, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { isSupabaseConfigured } from "@/lib/supabaseClient";
+import { useI18n } from "@/contexts/I18nContext";
 
 type Mode = "signin" | "signup";
 
@@ -14,11 +16,16 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { signIn, signUp } = useAuth();
+  const { t } = useI18n();
+  const { signIn, signUp, enableDemoMode } = useAuth();
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return; // Prevent double submission
+    if (!isSupabaseConfigured) {
+      toast.error("Supabase is not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env file.");
+      return;
+    }
+    if (loading) return;
     
     setLoading(true);
     try {
@@ -28,13 +35,12 @@ export default function Login() {
       }
 
       if (mode === "signup") {
-        const data = await signUp(email, password);
+        const data = await signUp(email, password, name);
         
-        // If Supabase returned a user but no session, it means email confirmation is ON
         if (data?.user && !data?.session) {
           toast.success("Account created! Please check your email to verify your account before logging in.");
           setMode("signin");
-          setPassword(""); // Clear password for security
+          setPassword("");
           setLoading(false);
           return;
         }
@@ -45,10 +51,10 @@ export default function Login() {
         toast.success("Welcome back!");
       }
       
-      // Only navigate if we actually have a session/user
       navigate("/decks");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Something went wrong";
+    } catch (error: any) {
+      console.error("Auth error:", error);
+      const message = error instanceof Error ? error.message : "Authentication failed. Check your connection and credentials.";
       toast.error(message);
       setLoading(false);
     } finally {
@@ -73,28 +79,36 @@ export default function Login() {
 
       <div className="relative z-10 mx-auto grid min-h-[calc(100vh-80px)] max-w-6xl items-center gap-10 px-5 py-10 md:grid-cols-2">
         {/* Brand panel */}
-        <section className="hidden md:block animate-fade-in-up">
-          <div className="rounded-3xl border border-border bg-gradient-card p-10 shadow-soft backdrop-blur">
-            <div className="grid size-14 place-items-center rounded-xl bg-gradient-primary text-primary-foreground shadow-soft">
-              <Brain className="size-7" />
+        <section className="hidden lg:block animate-fade-in-up">
+          {!isSupabaseConfigured && (
+            <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-xs font-bold mb-6">
+              ⚠️ Supabase is not configured. Real Auth will not work until you add your keys to the .env file.
             </div>
-            <h2 className="mt-6 font-display text-4xl font-bold leading-tight">
+          )}
+          <div className="rounded-[2.5rem] border border-border bg-gradient-card p-12 shadow-xl backdrop-blur relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 opacity-10">
+              <Sparkles className="size-32" />
+            </div>
+            <div className="grid size-16 place-items-center rounded-2xl bg-gradient-primary text-primary-foreground shadow-lg shadow-primary/20">
+              <Brain className="size-8" />
+            </div>
+            <h2 className="mt-8 font-display text-5xl font-black leading-tight tracking-tight">
               Study smarter,<br /> in tiny bursts.
             </h2>
-            <p className="mt-4 max-w-md text-muted-foreground">
-              MLFI gives you a calm space to capture, encode, recall and master what matters — built around six HCI goals.
+            <p className="mt-6 max-w-md text-lg text-muted-foreground font-medium leading-relaxed">
+              Spark Study gives you a calm space to capture, encode, recall and master what matters — built for high-performance learning.
             </p>
-            <ul className="mt-8 space-y-3 text-sm">
+            <ul className="mt-10 space-y-4 text-sm">
               {[
-                { i: ShieldCheck, t: "Auto-save and 30-day recovery" },
-                { i: Sparkles, t: "Templates: Q&A, Formula, Definition" },
+                { i: ShieldCheck, t: "Auto-save and real-time sync" },
+                { i: Sparkles, t: "Rich Media: Image, Math & Audio" },
                 { i: Zap, t: "Keyboard-first, accessible UI" },
               ].map(({ i: Icon, t }) => (
-                <li key={t} className="flex items-center gap-3">
-                  <span className="grid size-8 place-items-center rounded-md bg-primary/10 text-primary">
-                    <Icon className="size-4" />
+                <li key={t} className="flex items-center gap-4">
+                  <span className="grid size-10 place-items-center rounded-xl bg-primary/10 text-primary">
+                    <Icon className="size-5" />
                   </span>
-                  <span className="font-semibold">{t}</span>
+                  <span className="font-bold text-base">{t}</span>
                 </li>
               ))}
             </ul>
@@ -103,15 +117,15 @@ export default function Login() {
 
         {/* Auth card */}
         <section className="animate-scale-in">
-          <div className="mx-auto w-full max-w-md rounded-2xl border border-border bg-card/95 p-8 shadow-soft backdrop-blur-xl">
+          <div className="mx-auto w-full max-w-md rounded-[2.5rem] border border-border bg-card/95 p-10 shadow-2xl backdrop-blur-xl">
             <div className="text-center">
-              <div className="mx-auto inline-flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <Brain className="size-6" />
+              <div className="mx-auto inline-flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <Brain className="size-7" />
               </div>
-              <h1 className="mt-4 font-display text-2xl font-bold">
-                {mode === "signin" ? "Welcome back" : "Create your account"}
+              <h1 className="mt-6 font-display text-3xl font-black tracking-tight">
+                {mode === "signin" ? t("nav.signin") : "Create account"}
               </h1>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-2 text-sm text-muted-foreground font-medium">
                 {mode === "signin" ? "Log in to continue your study streak." : "Start studying in less than a minute."}
               </p>
             </div>
@@ -207,6 +221,7 @@ export default function Login() {
               >
                 {loading ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
               </button>
+
             </form>
 
             <p className="mt-6 text-center text-xs text-muted-foreground">
