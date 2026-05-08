@@ -24,14 +24,7 @@ const features = [
   { icon: Sparkles, title: "Calm, focused UI", text: "Minimal layout, accessible contrast and motion that respects you." },
 ];
 
-const goals = [
-  { icon: ShieldCheck, title: "Safety", text: "Confirmation flows, undo and recovery prevent accidental data loss." },
-  { icon: Layers3, title: "Utility", text: "Real coursework support: equations, tags, decks, templates." },
-  { icon: Zap, title: "Efficiency", text: "Shortcuts, inline editing and one-click creation reduce setup." },
-  { icon: BookOpen, title: "Usability", text: "Tabbed workspace, clear labels and keyboard navigation." },
-  { icon: Target, title: "Effectiveness", text: "Flip + spaced review map directly to recall research." },
-  { icon: Heart, title: "Appeal", text: "Soft gradients, motion and typography make studying inviting." },
-];
+// (Removed HCI goals listing per design — focus on user-facing value, not principles.)
 
 const Landing = () => {
   const { user } = useAuth();
@@ -78,9 +71,9 @@ const Landing = () => {
           <div className="animate-fade-in-up">
             <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-card/80 px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary backdrop-blur shadow-soft">
               <span className="size-1.5 rounded-full bg-success animate-pulse-save" />
-              <Sparkles className="size-3.5" /> HCI-driven micro-learning
+              <Sparkles className="size-3.5" /> Micro-learning, calmly designed
             </span>
-            <h2 className="mt-5 font-display text-4xl font-bold leading-[1.05] md:text-6xl lg:text-7xl">
+            <h2 className="mt-5 font-display text-[2.25rem] leading-[1.05] font-bold tracking-tight md:text-5xl lg:text-6xl">
               Learn in{" "}
               <span
                 className="bg-clip-text text-transparent animate-gradient-x"
@@ -95,8 +88,8 @@ const Landing = () => {
               .
               <br /> Remember for longer.
             </h2>
-            <p className="mt-5 max-w-xl text-base text-muted-foreground md:text-lg">
-              MLFI is a focused flashcard studio designed for maximum retention, so studying feels calm, not chaotic.
+            <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-muted-foreground md:text-base">
+              MLFI is a focused flashcard studio designed for maximum retention — calm, not chaotic.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
@@ -267,7 +260,7 @@ const Landing = () => {
       <section id="features" className="relative z-10 mx-auto max-w-6xl px-5 py-16">
         <div className="text-center">
           <p className="text-xs font-black uppercase tracking-wider text-primary">Features</p>
-          <h3 className="mt-2 font-display text-3xl font-bold md:text-4xl">Everything you need, nothing you don't.</h3>
+          <h3 className="mt-2 font-display text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight">Everything you need, nothing you don't.</h3>
         </div>
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {features.map((f, i) => (
