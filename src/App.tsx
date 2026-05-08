@@ -12,6 +12,8 @@ import Landing from "./pages/Landing.tsx";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Login from "./pages/Login.tsx";
+import Decks from "./pages/Decks.tsx";
+import Study from "./pages/Study.tsx";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +35,22 @@ const App = () => (
                     element={
                       <ProtectedRoute>
                         <Index />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/decks"
+                    element={
+                      <ProtectedRoute>
+                        <Decks />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/study"
+                    element={
+                      <ProtectedRoute>
+                        <Study />
                       </ProtectedRoute>
                     }
                   />

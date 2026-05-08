@@ -88,28 +88,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!isSupabaseConfigured || !supabase) {
       // Local mode: just accept the email
       setUser({ id: email || "local-user", email: email || "user@spark.study" });
-      return;
+      return { user: { id: email }, session: {} };
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     if (error) throw error;
+    return data;
   };
 
   const signUp = async (email: string, password: string) => {
     if (!isSupabaseConfigured || !supabase) {
       // Local mode: just accept the email
-      setUser({ id: email || "local-user", email: email || "user@spark.study" });
-      return;
+      const fakeUser = { id: email || "local-user", email: email || "user@spark.study" };
+      setUser(fakeUser);
+      return { user: fakeUser, session: {} };
     }
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
     });
     if (error) throw error;
+    return data;
   };
 
   const signOut = async () => {
@@ -123,8 +126,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       user,
       loading,
-      signIn,
-      signUp,
+      signIn: signIn as any,
+      signUp: signUp as any,
       signOut,
     }),
     [user, loading],

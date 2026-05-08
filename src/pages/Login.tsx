@@ -18,6 +18,8 @@ export default function Login() {
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return; // Prevent double submission
+    
     setLoading(true);
     try {
       if (!email || !password) throw new Error("Please fill in all fields");
@@ -26,18 +28,32 @@ export default function Login() {
       }
 
       if (mode === "signup") {
-        await signUp(email, password);
-        toast.success("Welcome aboard! Check your email to verify your account.");
+        const data = await signUp(email, password);
+        
+        // If Supabase returned a user but no session, it means email confirmation is ON
+        if (data?.user && !data?.session) {
+          toast.success("Account created! Please check your email to verify your account before logging in.");
+          setMode("signin");
+          setPassword(""); // Clear password for security
+          setLoading(false);
+          return;
+        }
+        
+        toast.success("Welcome aboard!");
       } else {
         await signIn(email, password);
         toast.success("Welcome back!");
       }
-      navigate("/app");
+      
+      // Only navigate if we actually have a session/user
+      navigate("/decks");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Something went wrong";
       toast.error(message);
-    } finally {
       setLoading(false);
+    } finally {
+      // Note: we don't always want to set loading false here if we are navigating
+      // but if an error occurred or we stayed on the page, we should.
     }
   };
 

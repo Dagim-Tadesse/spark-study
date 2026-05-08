@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Spark Study icon">
+  <defs>
+    <linearGradient id="bg" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3B82F6" />
+      <stop offset="1" stop-color="#7C3AED" />
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="url(#bg)" />
+  <path
+    d="M20 22.5C20 19.46 22.46 17 25.5 17H38.5C41.54 17 44 19.46 44 22.5V33.5C44 36.54 41.54 39 38.5 39H30L24.5 44V39H25.5C22.46 39 20 36.54 20 33.5V22.5Z"
+    fill="#FFF"
+    fill-opacity=".96"
+  />
+  <path d="M25 25H39" stroke="#4338CA" stroke-width="2.8" stroke-linecap="round" />
+  <path d="M25 30H35" stroke="#4338CA" stroke-width="2.8" stroke-linecap="round" />
+  <path d="M47.2 14.8L48.8 18.4L52.4 20L48.8 21.6L47.2 25.2L45.6 21.6L42 20L45.6 18.4L47.2 14.8Z" fill="#FDE68A" />
+</svg>

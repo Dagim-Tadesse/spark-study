@@ -35,7 +35,7 @@ const goals = [
 
 const Landing = () => {
   const { user } = useAuth();
-  const ctaTo = user ? "/app" : "/login";
+  const ctaTo = user ? "/decks" : "/login";
 
   return (
     <main className="mlfi-shell min-h-screen overflow-hidden text-foreground">
@@ -96,8 +96,7 @@ const Landing = () => {
               <br /> Remember for longer.
             </h2>
             <p className="mt-5 max-w-xl text-base text-muted-foreground md:text-lg">
-              MLFI is a focused flashcard studio designed around the six HCI goals — safety, utility,
-              efficiency, usability, effectiveness and appeal — so studying feels calm, not chaotic.
+              MLFI is a focused flashcard studio designed for maximum retention, so studying feels calm, not chaotic.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
@@ -287,25 +286,7 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* HCI 6 goals */}
-      <section className="relative z-10 mx-auto max-w-6xl px-5 py-16">
-        <div className="rounded-3xl border border-border bg-gradient-card p-8 shadow-soft backdrop-blur">
-          <div className="text-center">
-            <p className="text-xs font-black uppercase tracking-wider text-primary">HCI design goals</p>
-            <h3 className="mt-2 font-display text-3xl font-bold">Designed around six principles.</h3>
-          </div>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {goals.map((g) => (
-              <div key={g.title} className="rounded-xl border border-border bg-card/90 p-5 transition hover:-translate-y-0.5">
-                <div className="flex items-center gap-2 font-bold">
-                  <g.icon className="size-4 text-primary" /> {g.title}
-                </div>
-                <p className="mt-2 text-sm text-muted-foreground">{g.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+
 
       {/* Final CTA */}
       <section className="relative z-10 mx-auto max-w-4xl px-5 py-20 text-center">

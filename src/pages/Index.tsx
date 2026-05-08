@@ -112,6 +112,42 @@ const Index = () => {
     localStorage.setItem("spark-study-theme", darkMode ? "dark" : "light");
   }, [darkMode]);
 
+  // Global Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input or textarea
+      if (
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA"
+      ) {
+        return;
+      }
+
+      const key = e.key.toLowerCase();
+
+      if (tab === "study") {
+        if (key === "f") {
+          e.preventDefault();
+          setFlipped((v) => !v);
+        } else if (key === "k" || key === "n") {
+          e.preventDefault();
+          markStudy(true);
+        } else if (key === "r") {
+          e.preventDefault();
+          markStudy(false);
+        }
+      } else if (tab === "editor") {
+        if (key === "c" && (e.metaKey || e.ctrlKey)) {
+          e.preventDefault();
+          addCard();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [tab, flipped]);
+
   useEffect(() => {
     if (!decks.length) return setSelectedDeckId("");
     if (!selectedDeckId || !decks.some((d) => d.id === selectedDeckId)) {
@@ -458,8 +494,8 @@ const Index = () => {
 
         {/* EDITOR */}
         {tab === "editor" && (
-          <div id="panel-editor" role="tabpanel" className="grid gap-5 animate-fade-in-up xl:grid-cols-[1.15fr_0.85fr]">
-            <section className="rounded-2xl border border-border bg-card/90 p-5 shadow-soft">
+          <div id="panel-editor" role="tabpanel" className="grid gap-5 animate-fade-in-up xl:grid-cols-[1fr_1fr]">
+            <section className="min-w-0 rounded-2xl border border-border bg-card/90 p-5 shadow-soft">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Flashcard editor</p>
@@ -527,7 +563,7 @@ const Index = () => {
               </div>
             </section>
 
-            <section className="rounded-2xl border border-border bg-gradient-card p-5 shadow-soft">
+            <section className="min-w-0 rounded-2xl border border-border bg-gradient-card p-5 shadow-soft">
               <div className="flex items-center justify-between">
                 <h4 className="font-bold">Live preview</h4>
                 <span className="rounded-sm bg-accent px-2 py-1 text-xs font-bold text-accent-foreground">{selectedTemplate}</span>
@@ -536,7 +572,7 @@ const Index = () => {
                 <p className="text-xs font-bold uppercase tracking-wider text-primary">
                   {selectedTags[0] ?? activeDeck?.name ?? "study"}
                 </p>
-                <p className="mt-3 whitespace-pre-line text-xl font-bold">
+                <p className="mt-3 break-words whitespace-pre-line text-xl font-bold">
                   {selectedCard?.back ?? "Create a card to preview it."}
                 </p>
                 <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
@@ -761,26 +797,11 @@ const Index = () => {
         {tab === "about" && (
           <div id="panel-about" role="tabpanel" className="space-y-6 animate-fade-in-up">
             <div className="rounded-2xl border border-border bg-gradient-card p-6 shadow-soft">
-              <p className="text-xs font-black uppercase tracking-wider text-primary">HCI design mapping</p>
-              <h3 className="mt-2 font-display text-2xl font-bold">Six goals, one focused tool.</h3>
+              <p className="text-xs font-black uppercase tracking-wider text-primary">About Spark Study</p>
+              <h3 className="mt-2 font-display text-2xl font-bold">Your calm, focused flashcard studio.</h3>
               <p className="mt-2 text-sm text-muted-foreground max-w-2xl">
-                Every interaction in MLFI is mapped to a human-computer interaction goal so the
-                interface stays intentional, accessible and calm.
+                MLFI (Micro-Learning Flashcard Interface) is built to help you capture, encode, and master what matters without the noise of traditional study apps.
               </p>
-              <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {hciGoals.map((g, i) => (
-                  <article
-                    key={g.title}
-                    style={{ animationDelay: `${i * 70}ms` }}
-                    className="animate-fade-in-up rounded-xl border border-border bg-card/90 p-4 transition hover:-translate-y-0.5 hover:shadow-card"
-                  >
-                    <div className="flex items-center gap-2 font-bold">
-                      <g.icon className="size-4 text-primary" /> {g.title}
-                    </div>
-                    <p className="mt-2 text-sm text-muted-foreground">{g.text}</p>
-                  </article>
-                ))}
-              </div>
             </div>
 
             {/* How to use */}
