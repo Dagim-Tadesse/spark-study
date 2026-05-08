@@ -99,7 +99,7 @@ const Decks = () => {
             setSelectedCardId(firstCard.id);
             setLocalFront(firstCard.front);
             setLocalBack(firstCard.back);
-            setLocalTag(firstCard.tag || "");
+            setLocalTag(firstCard.tags?.[0] || "");
           }
         }
       } catch (error) {
@@ -129,7 +129,7 @@ const Decks = () => {
       setSelectedCardId(firstCard.id);
       setLocalFront(firstCard.front);
       setLocalBack(firstCard.back);
-      setLocalTag(firstCard.tag || "");
+      setLocalTag(firstCard.tags?.[0] || "");
     } else {
       setSelectedCardId(null);
       setLocalFront("");
@@ -152,7 +152,7 @@ const Decks = () => {
     setSelectedCardId(card.id);
     setLocalFront(card.front);
     setLocalBack(card.back);
-    setLocalTag(card.tag || "");
+    setLocalTag(card.tags?.[0] || "");
     setShowSafety(false);
     setShowMoveDialog(false);
   };
@@ -173,10 +173,10 @@ const Decks = () => {
     const fullUpdates = {
       front: updates.front !== undefined ? updates.front : (currentCard?.front || ""),
       back: updates.back !== undefined ? updates.back : (currentCard?.back || ""),
-      tag: updates.tag !== undefined ? updates.tag : (currentCard?.tag || ""),
+      tags: updates.tag !== undefined ? [updates.tag] : (currentCard?.tags || []),
     };
 
-    pendingSaveRef.current = { id: selectedCardId, updates: fullUpdates };
+    pendingSaveRef.current = { id: selectedCardId, updates: fullUpdates as any };
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
 
     // Properly debounced save
@@ -205,15 +205,16 @@ const Decks = () => {
         template: "Q&A",
         front: "",
         back: "",
-        tag: "new",
+        tags: ["new"],
         next_review: Date.now(),
         interval: 0,
       });
       setCards(prev => [...prev, newCard]);
       handleSelectCard(newCard);
       setAutosaveText("Created");
-    } catch (e) {
-      setAutosaveText("Error");
+    } catch (e: any) {
+      console.error("Add card failed:", e);
+      setAutosaveText("Error: " + (e.message || "Unknown error"));
     }
   };
 
@@ -229,7 +230,7 @@ const Decks = () => {
         template: currentCard.template,
         front: currentCard.front,
         back: currentCard.back,
-        tag: currentCard.tag,
+        tags: currentCard.tags || [],
         next_review: Date.now(),
         interval: 0,
       });
@@ -261,9 +262,26 @@ const Decks = () => {
     try {
       const newDeck = await deckService.createDeck(user.id, `New Deck ${decks.length + 1}`, "bg-primary");
       setDecks(prev => [...prev, { ...newDeck, progress: 0 }]);
-      handleSelectDeck(newDeck.id);
+      setSelectedDeckId(newDeck.id);
+      
+      // Auto-create the first card for a better onboarding experience
+      setAutosaveText("Creating first card...");
+      const firstCard = await cardService.createCard({
+        deck_id: newDeck.id,
+        user_id: user.id,
+        template: "Q&A",
+        front: "",
+        back: "",
+        tags: ["new"],
+        next_review: Date.now(),
+        interval: 0,
+      });
+      setCards(prev => [...prev, firstCard]);
+      handleSelectCard(firstCard);
+      setAutosaveText("Deck & card ready");
     } catch (e) {
       console.error(e);
+      setAutosaveText("Error creating deck");
     }
   };
 
@@ -452,38 +470,47 @@ const Decks = () => {
                   </div>
 
                   <div className="space-y-3 flex-1 overflow-y-auto pr-1 custom-scrollbar min-h-0">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Tags</label>
-                      <input
-                        type="text" value={localTag}
-                        onChange={(e) => handleUpdateContent({ tag: e.target.value })}
-                        disabled={!selectedCardId}
-                        className="w-full p-2.5 rounded-lg bg-secondary/30 border border-border focus:border-primary outline-none text-sm"
-                        placeholder="e.g. math, easy"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Front Side</label>
-                      <textarea
-                        value={localFront}
-                        onChange={(e) => handleUpdateContent({ front: e.target.value })}
-                        disabled={!selectedCardId}
-                        rows={5}
-                        className="w-full min-h-[120px] max-h-[40vh] p-3 rounded-lg bg-secondary/30 border border-border focus:border-primary outline-none resize-y text-sm leading-relaxed break-words whitespace-pre-wrap"
-                        placeholder="Type the question here..."
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Back Side</label>
-                      <textarea
-                        value={localBack}
-                        onChange={(e) => handleUpdateContent({ back: e.target.value })}
-                        disabled={!selectedCardId}
-                        rows={5}
-                        className="w-full min-h-[120px] max-h-[40vh] p-3 rounded-lg bg-secondary/30 border border-border focus:border-primary outline-none resize-y text-sm leading-relaxed break-words whitespace-pre-wrap"
-                        placeholder="Type the answer here..."
-                      />
-                    </div>
+                    {!selectedCardId ? (
+                      <div className="h-full flex flex-col items-center justify-center text-center p-6 bg-secondary/10 rounded-xl border-2 border-dashed border-border/50">
+                        <Plus className="size-8 text-muted-foreground mb-2" />
+                        <p className="text-sm font-bold text-muted-foreground">No card selected</p>
+                        <button onClick={addCard} className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-bold text-xs shadow-soft">
+                          Create first card
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Tags</label>
+                          <input
+                            type="text" value={localTag}
+                            onChange={(e) => handleUpdateContent({ tag: e.target.value })}
+                            className="w-full p-2.5 rounded-lg bg-secondary/30 border border-border focus:border-primary outline-none text-sm"
+                            placeholder="e.g. math, easy"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Front Side</label>
+                          <textarea
+                            value={localFront}
+                            onChange={(e) => handleUpdateContent({ front: e.target.value })}
+                            rows={5}
+                            className="w-full min-h-[120px] max-h-[40vh] p-3 rounded-lg bg-secondary/30 border border-border focus:border-primary outline-none resize-y text-sm leading-relaxed break-words whitespace-pre-wrap"
+                            placeholder="Type the question here..."
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Back Side</label>
+                          <textarea
+                            value={localBack}
+                            onChange={(e) => handleUpdateContent({ back: e.target.value })}
+                            rows={5}
+                            className="w-full min-h-[120px] max-h-[40vh] p-3 rounded-lg bg-secondary/30 border border-border focus:border-primary outline-none resize-y text-sm leading-relaxed break-words whitespace-pre-wrap"
+                            placeholder="Type the answer here..."
+                          />
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 
