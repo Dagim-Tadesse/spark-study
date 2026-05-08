@@ -512,11 +512,12 @@ const Decks = () => {
   };
 
   const addDeck = async () => {
-    if (!user || !newDeckName.trim()) return;
+    if (!user) return;
+    const finalName = newDeckName.trim() || t("common.newDeck") || "Untitled Deck";
     try {
       const newDeck = await deckService.createDeck(
         user.id,
-        newDeckName,
+        finalName,
         "bg-primary",
       );
       setDecks((prev) => [...prev, { ...newDeck, progress: 0 }]);
