@@ -1,4 +1,5 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
+import { storage } from '../lib/storage';
 
 export interface Profile {
   id: string;
@@ -11,8 +12,17 @@ export interface Profile {
 
 export const profileService = {
   async getProfile(userId: string) {
-    if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase is not configured');
+    if (!isSupabaseConfigured || !supabase || userId.startsWith('demo-')) {
+      const profiles = storage.get<Profile>('profiles');
+      const found = profiles.find(p => p.id === userId);
+      return found || {
+        id: userId,
+        streak: 0,
+        last_study_date: null,
+        total_reviews: 0,
+        successful_reviews: 0,
+        created_at: new Date().toISOString()
+      } as Profile;
     }
     const { data, error } = await supabase
       .from('spark_study_profiles')
@@ -22,8 +32,7 @@ export const profileService = {
 
     if (error) {
       if (error.code === 'PGRST116') {
-        // Profile not found, this happens for older users who didn't trigger the SQL trigger.
-        // We gracefully return a default profile.
+        // Profile not found
         return {
           id: userId,
           streak: 0,
@@ -40,8 +49,18 @@ export const profileService = {
   },
 
   async updateProfile(userId: string, updates: Partial<Profile>) {
-    if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase is not configured');
+    if (!isSupabaseConfigured || !supabase || userId.startsWith('demo-')) {
+      const profiles = storage.get<Profile>('profiles');
+      const index = profiles.findIndex(p => p.id === userId);
+      if (index !== -1) {
+        profiles[index] = { ...profiles[index], ...updates };
+        storage.save('profiles', profiles);
+        return profiles[index];
+      } else {
+        const newProfile = { id: userId, streak: 0, last_study_date: null, total_reviews: 0, successful_reviews: 0, created_at: new Date().toISOString(), ...updates } as Profile;
+        storage.addItem('profiles', newProfile);
+        return newProfile;
+      }
     }
     const { data, error } = await supabase
       .from('spark_study_profiles')

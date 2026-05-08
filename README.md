@@ -1,15 +1,26 @@
 # Spark Study
 
-Spark Study is a Vite + React + TypeScript UI for a flashcard-style learning workspace (deck list, card editor with live preview, and a basic study/flip flow).
+Spark Study is a modern, production-ready flashcard and spaced repetition learning application built with Vite, React, TypeScript, and Supabase.
 
-This repository currently focuses on the **front-end experience**. Most data is **in-memory** (refresh will reset decks/cards/stats) until a persistence layer is added.
+This repository features a robust front-end experience with full backend persistence, authentication, and cloud data synchronization.
+
+## Features
+
+- **Authentication**: Secure user login and signup powered by Supabase.
+- **Cloud Persistence**: Decks, cards, and study statistics are securely saved in the cloud.
+- **Rich Text Editor**: A robust `contentEditable` editor supporting formatting (H1, Bullets, Bold, Italic), Math equations, Audio tags, and seamless Image uploads.
+- **Study Mode**: Interactive card flipping with spaced repetition actions (Know, Review again) and progress tracking.
+- **Dashboard & Analytics**: Track your study streak, total reviews, and retention rates.
+- **Tags & Templates**: Categorize cards quickly with predefined templates (Formula, Definition, etc.).
+- **Accessibility & i18n**: Dark/Light modes, color-blind safe palettes, English/Amharic translation support, and full keyboard navigation.
 
 ## Requirements
 
 - Node.js (recommended: Node 20+)
 - npm (comes with Node)
+- Supabase Project (for database and auth)
 
-## Quick start (run the UI)
+## Quick start
 
 1. Install dependencies:
 
@@ -17,80 +28,40 @@ This repository currently focuses on the **front-end experience**. Most data is 
 npm install
 ```
 
-2. Start the dev server:
+2. Create a `.env` file in the root directory and add your Supabase credentials:
+
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+3. Start the dev server:
 
 ```bash
 npm run dev
 ```
 
-3. Open the URL Vite prints in the terminal (usually `http://localhost:5173`).
+4. Open the URL Vite prints in the terminal (usually `http://localhost:5173`).
 
 ## Common commands
 
-### Development
-
-```bash
-npm run dev
-```
-
-### Production build
-
-```bash
-npm run build
-```
-
-### Preview the production build locally
-
-```bash
-npm run preview
-```
-
-### Lint
-
-```bash
-npm run lint
-```
-
-### Tests
-
-```bash
-npm test
-```
-
-Watch mode:
-
-```bash
-npm run test:watch
-```
-
-## What’s implemented in the UI
-
-- Deck list + selection
-- Add deck / add card
-- Card editor (front/back) with simple tool buttons (adds formatted snippets)
-- Study mode (flip card + “Know” / “Review again” actions)
-- Theme toggle (light/dark)
-- Basic in-page undo/redo for card edits (session-only)
-
-## Notes / current limitations
-
-- No persistence yet (decks/cards reset on refresh)
-- No authentication or syncing
-- “Spaced review”, “version history”, and “30 days recovery” are UI concepts that need real data + logic
-
-See the implementation checklist in task.md for the next steps toward a production-ready app.
+- **Development**: `npm run dev`
+- **Production build**: `npm run build`
+- **Preview build**: `npm run preview`
+- **Lint**: `npm run lint`
 
 ## Tech stack
 
-- Vite
-- React 18 + TypeScript
-- Tailwind CSS
-- shadcn/ui components (Radix UI primitives)
-- React Router
-- TanStack Query (installed and wired in the app shell)
+- **Frontend**: React 18, TypeScript, Vite
+- **Styling**: Tailwind CSS, framer-motion, lucide-react
+- **Backend / Database**: Supabase (PostgreSQL, Authentication)
+- **Routing**: React Router
+- **State Management / Data Fetching**: Context API, custom services
 
 ## Project structure
 
-- `src/pages/Index.tsx`: main UI screen (decks, editor, study)
-- `src/App.tsx`: router + providers
-- `src/components/ui/`: reusable UI components
+- `src/pages/`: Main application views (Dashboard, Library, Study, etc.)
+- `src/components/`: Reusable UI components
+- `src/contexts/`: Global state (Auth, i18n, Accessibility)
+- `src/services/`: Supabase data fetching services
+- `supabase/`: Database schemas and RLS policies
