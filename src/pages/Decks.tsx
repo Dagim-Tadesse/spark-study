@@ -328,18 +328,18 @@ const Decks = () => {
 
   return (
     <Layout>
-      <div className="flex flex-col lg:flex-row gap-8 h-[calc(100vh-160px)]">
-        <aside className="w-full lg:w-80 flex flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar">
+      <div className="flex flex-col lg:flex-row gap-6 lg:h-[calc(100vh-160px)]">
+        <aside className="w-full lg:w-72 shrink-0 flex flex-col gap-4 lg:overflow-y-auto lg:pr-2 custom-scrollbar">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold flex items-center gap-2"><LayoutGrid className="size-5 text-primary" /> Library</h2>
-            <button onClick={addDeck} className="p-2 rounded-lg bg-primary text-white hover:opacity-90"><Plus className="size-5" /></button>
+            <h2 className="text-lg font-bold flex items-center gap-2"><LayoutGrid className="size-5 text-primary" /> Library</h2>
+            <button onClick={addDeck} aria-label="Add deck" className="p-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 shadow-soft"><Plus className="size-4" /></button>
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <input
               type="text" placeholder="Search decks..." value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-lg border border-border bg-card outline-none"
+              className="w-full pl-10 pr-3 py-2 rounded-lg border border-border bg-card text-sm outline-none focus:border-primary"
             />
           </div>
           <div className="space-y-2">
@@ -347,13 +347,11 @@ const Decks = () => {
               <div key={deck.id} className="relative group">
                 <button
                   onClick={() => handleSelectDeck(deck.id)}
-                  className={cn("w-full text-left p-4 rounded-xl border transition-all", selectedDeckId === deck.id ? "border-primary bg-primary/5" : "border-border bg-card hover:border-primary/30")}
+                  className={cn("w-full text-left p-3 rounded-xl border transition-all", selectedDeckId === deck.id ? "border-primary bg-primary/5" : "border-border bg-card hover:border-primary/30")}
                 >
                   {editingDeckId === deck.id ? (
                     <input
-                      autoFocus
-                      type="text"
-                      value={editingDeckName}
+                      autoFocus type="text" value={editingDeckName}
                       onChange={(e) => setEditingDeckName(e.target.value)}
                       onBlur={saveDeckName}
                       onKeyDown={(e) => e.key === 'Enter' && saveDeckName()}
@@ -366,21 +364,19 @@ const Decks = () => {
                   <p className="text-[10px] text-muted-foreground uppercase font-black mt-1">{cards.filter(c => c.deck_id === deck.id).length} Cards</p>
                 </button>
 
-                <div className={cn("absolute right-2 top-1/2 -translate-y-1/2 transition-opacity", selectedDeckId === deck.id ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
+                <div className={cn("absolute right-2 top-1/2 -translate-y-1/2 transition-opacity", selectedDeckId === deck.id ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-within:opacity-100")}>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button onClick={(e) => e.stopPropagation()} className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground">
+                      <button onClick={(e) => e.stopPropagation()} aria-label="Deck actions" className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground">
                         <MoreVertical className="size-4" />
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-40">
                       <DropdownMenuItem onClick={(e) => startEditingDeck(deck, e as any)}>
-                        <Edit2 className="size-4 mr-2" />
-                        Rename Deck
+                        <Edit2 className="size-4 mr-2" /> Rename Deck
                       </DropdownMenuItem>
                       <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={(e) => confirmDeleteDeck(deck.id, e as any)}>
-                        <Trash2 className="size-4 mr-2" />
-                        Delete Deck
+                        <Trash2 className="size-4 mr-2" /> Delete Deck
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -390,49 +386,34 @@ const Decks = () => {
           </div>
         </aside>
 
-        <main className="flex-1 flex flex-col gap-6 overflow-hidden">
+        <main className="flex-1 min-w-0 flex flex-col gap-4 lg:overflow-hidden">
           {selectedDeckId ? (
             <>
-              <div className="flex items-center justify-between bg-card p-4 rounded-xl border border-border shadow-sm">
-                <h3 className="text-lg font-bold truncate">{decks.find(d => d.id === selectedDeckId)?.name}</h3>
-                <button onClick={addCard} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-bold text-sm shadow-soft">
+              <div className="flex items-center justify-between bg-card p-3 rounded-xl border border-border shadow-sm">
+                <h3 className="text-base font-bold truncate">{decks.find(d => d.id === selectedDeckId)?.name}</h3>
+                <button onClick={addCard} className="flex items-center gap-2 px-3 py-2 bg-primary text-primary-foreground rounded-lg font-bold text-xs shadow-soft hover:-translate-y-0.5 transition">
                   <Plus className="size-4" /> Add Card
                 </button>
               </div>
 
-              <div className="flex-1 grid grid-cols-1 xl:grid-cols-2 gap-6 overflow-hidden">
-                <div className="bg-card border border-border rounded-xl p-6 flex flex-col gap-4 shadow-sm overflow-hidden">
+              <div className="flex-1 grid grid-cols-1 xl:grid-cols-[1.1fr_0.9fr] gap-4 lg:overflow-hidden min-h-0">
+                {/* EDITOR */}
+                <div className="bg-card border border-border rounded-xl p-4 flex flex-col gap-3 shadow-sm min-w-0 min-h-0 overflow-hidden">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-black uppercase text-muted-foreground">Editor</span>
+                    <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Editor</span>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-success uppercase tracking-wider pr-2">{autosaveText}</span>
-
+                      <span className="text-[10px] font-bold text-success uppercase tracking-wider pr-1">{autosaveText}</span>
                       {selectedCardId && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <button className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground">
+                            <button aria-label="Card actions" className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground">
                               <MoreVertical className="size-4" />
                             </button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem onClick={duplicateCard}>
-                              <Copy className="size-4 mr-2" />
-                              Duplicate Card
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => {
-                              setShowMoveDialog(true);
-                              setShowSafety(false);
-                            }}>
-                              <FolderInput className="size-4 mr-2" />
-                              Move to Deck...
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => {
-                              setShowSafety(true);
-                              setShowMoveDialog(false);
-                            }}>
-                              <Trash2 className="size-4 mr-2" />
-                              Delete Card
-                            </DropdownMenuItem>
+                          <DropdownMenuContent align="end" className="w-44">
+                            <DropdownMenuItem onClick={duplicateCard}><Copy className="size-4 mr-2" /> Duplicate Card</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => { setShowMoveDialog(true); setShowSafety(false); }}><FolderInput className="size-4 mr-2" /> Move to Deck...</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => { setShowSafety(true); setShowMoveDialog(false); }}><Trash2 className="size-4 mr-2" /> Delete Card</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       )}
@@ -440,11 +421,11 @@ const Decks = () => {
                   </div>
 
                   {showSafety && (
-                    <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center justify-between">
+                    <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center justify-between gap-2 flex-wrap">
                       <span className="text-xs font-bold">Delete this card?</span>
                       <div className="flex gap-2">
-                        <button onClick={confirmDelete} className="px-4 py-1.5 bg-destructive text-white text-[10px] font-bold rounded-md">Yes, Delete</button>
-                        <button onClick={() => setShowSafety(false)} className="px-4 py-1.5 bg-secondary text-foreground text-[10px] font-bold rounded-md">Cancel</button>
+                        <button onClick={confirmDelete} className="px-3 py-1.5 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-md">Yes, Delete</button>
+                        <button onClick={() => setShowSafety(false)} className="px-3 py-1.5 bg-secondary text-foreground text-[10px] font-bold rounded-md">Cancel</button>
                       </div>
                     </div>
                   )}
@@ -454,85 +435,99 @@ const Decks = () => {
                       <span className="text-xs font-bold mb-1">Move card to deck:</span>
                       <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
                         {decks.filter(d => d.id !== selectedDeckId).map(deck => (
-                          <button
-                            key={deck.id}
-                            onClick={() => moveCard(deck.id)}
-                            className="px-3 py-1.5 bg-card border border-border hover:border-primary text-xs font-bold rounded-md transition-colors"
-                          >
-                            {deck.name}
-                          </button>
+                          <button key={deck.id} onClick={() => moveCard(deck.id)} className="px-3 py-1.5 bg-card border border-border hover:border-primary text-xs font-bold rounded-md transition-colors">{deck.name}</button>
                         ))}
-                        {decks.filter(d => d.id !== selectedDeckId).length === 0 && (
-                          <span className="text-xs text-muted-foreground">No other decks available.</span>
-                        )}
+                        {decks.filter(d => d.id !== selectedDeckId).length === 0 && (<span className="text-xs text-muted-foreground">No other decks available.</span>)}
                       </div>
                       <div className="mt-1 flex justify-end">
-                        <button onClick={() => setShowMoveDialog(false)} className="px-4 py-1.5 bg-secondary hover:bg-secondary/80 text-foreground text-[10px] font-bold rounded-md transition-colors">Cancel</button>
+                        <button onClick={() => setShowMoveDialog(false)} className="px-3 py-1.5 bg-secondary text-foreground text-[10px] font-bold rounded-md">Cancel</button>
                       </div>
                     </div>
                   )}
 
-                  <div className="flex gap-2 pb-2">
+                  <div className="flex flex-wrap gap-1.5">
                     {editorTools.map(t => (
-                      <button key={t.label} className="p-2.5 rounded-lg bg-secondary text-muted-foreground hover:text-primary transition-all"><t.icon className="size-4" /></button>
+                      <button key={t.label} title={t.label} aria-label={t.label} className="p-2 rounded-md bg-secondary text-muted-foreground hover:text-primary hover:bg-secondary/80 transition"><t.icon className="size-4" /></button>
                     ))}
                   </div>
 
-                  <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                    <div className="flex flex-col gap-2">
+                  <div className="space-y-3 flex-1 overflow-y-auto pr-1 custom-scrollbar min-h-0">
+                    <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Tags</label>
                       <input
-                        type="text"
-                        value={localTag}
+                        type="text" value={localTag}
                         onChange={(e) => handleUpdateContent({ tag: e.target.value })}
                         disabled={!selectedCardId}
-                        className="w-full p-2.5 rounded-lg bg-secondary/30 border border-border focus:border-primary outline-none text-sm font-medium"
-                        placeholder="Enter tags (e.g. math, easy)"
+                        className="w-full p-2.5 rounded-lg bg-secondary/30 border border-border focus:border-primary outline-none text-sm"
+                        placeholder="e.g. math, easy"
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Front Side</label>
                       <textarea
                         value={localFront}
                         onChange={(e) => handleUpdateContent({ front: e.target.value })}
                         disabled={!selectedCardId}
-                        className="w-full h-32 p-4 rounded-xl bg-secondary/30 border border-border focus:border-primary outline-none resize-none text-sm font-medium"
+                        rows={5}
+                        className="w-full min-h-[120px] max-h-[40vh] p-3 rounded-lg bg-secondary/30 border border-border focus:border-primary outline-none resize-y text-sm leading-relaxed break-words whitespace-pre-wrap"
                         placeholder="Type the question here..."
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Back Side</label>
                       <textarea
                         value={localBack}
                         onChange={(e) => handleUpdateContent({ back: e.target.value })}
                         disabled={!selectedCardId}
-                        className="w-full h-32 p-4 rounded-xl bg-secondary/30 border border-border focus:border-primary outline-none resize-none text-sm font-medium"
+                        rows={5}
+                        className="w-full min-h-[120px] max-h-[40vh] p-3 rounded-lg bg-secondary/30 border border-border focus:border-primary outline-none resize-y text-sm leading-relaxed break-words whitespace-pre-wrap"
                         placeholder="Type the answer here..."
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-card border border-border rounded-xl p-6 shadow-sm flex flex-col overflow-hidden">
-                  <span className="text-xs font-black uppercase text-muted-foreground mb-4">Deck Cards</span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto pr-2 custom-scrollbar">
-                    {deckCards.map(c => (
-                      <button
-                        key={c.id} onClick={() => handleSelectCard(c)}
-                        className={cn("p-4 rounded-xl border text-left transition-all", selectedCardId === c.id ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border hover:border-primary/30")}
-                      >
-                        <p className="text-xs font-bold line-clamp-2">{c.front || "(Empty Card)"}</p>
-                      </button>
-                    ))}
+                {/* PREVIEW + LIST */}
+                <div className="flex flex-col gap-4 min-w-0 min-h-0 overflow-hidden">
+                  <div className="bg-gradient-card border border-border rounded-xl p-4 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Live preview</span>
+                      {localTag && <span className="text-[10px] font-bold uppercase rounded bg-primary/10 text-primary px-2 py-0.5">{localTag}</span>}
+                    </div>
+                    <div className="mt-3 rounded-xl border border-border bg-card p-4 min-h-[140px]">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-primary">Question</p>
+                      <p className="mt-1 text-sm font-semibold whitespace-pre-wrap break-words">{localFront || "—"}</p>
+                      <div className="mt-3 border-t border-dashed border-border pt-3">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-success">Answer</p>
+                        <p className="mt-1 text-sm whitespace-pre-wrap break-words">{localBack || "—"}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-card border border-border rounded-xl p-4 shadow-sm flex flex-col min-h-0 overflow-hidden flex-1">
+                    <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mb-3">Cards in deck ({deckCards.length})</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 overflow-y-auto pr-1 custom-scrollbar min-h-0">
+                      {deckCards.map(c => (
+                        <button
+                          key={c.id} onClick={() => handleSelectCard(c)}
+                          className={cn("p-3 rounded-lg border text-left transition-all", selectedCardId === c.id ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border hover:border-primary/30")}
+                        >
+                          <p className="text-xs font-bold line-clamp-2 break-words">{c.front || "(Empty Card)"}</p>
+                        </button>
+                      ))}
+                      {!deckCards.length && (
+                        <p className="text-xs text-muted-foreground col-span-full">No cards yet. Click "Add Card" to start.</p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-border rounded-3xl opacity-50">
-              <BookOpen className="size-16 mb-4 text-primary" />
-              <h3 className="text-xl font-bold">Select a deck to begin</h3>
-              <p className="text-sm mt-2">Manage your flashcards and prepare for your sessions.</p>
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-border rounded-3xl opacity-60">
+              <BookOpen className="size-14 mb-4 text-primary" />
+              <h3 className="text-lg font-bold">Select a deck to begin</h3>
+              <p className="text-sm mt-2 text-muted-foreground">Or click + to create your first one.</p>
             </div>
           )}
         </main>
