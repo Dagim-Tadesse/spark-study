@@ -12,9 +12,13 @@ export const storage = {
     this.save(key, items);
     return item;
   },
-  updateItem<T extends { id: string }>(key: string, id: string, updates: Partial<T>) {
+  updateItem<T extends { id: string }>(
+    key: string,
+    id: string,
+    updates: Partial<T>,
+  ) {
     const items = this.get<T>(key);
-    const index = items.findIndex(i => i.id === id);
+    const index = items.findIndex((i) => i.id === id);
     if (index !== -1) {
       items[index] = { ...items[index], ...updates };
       this.save(key, items);
@@ -24,6 +28,9 @@ export const storage = {
   },
   deleteItem(key: string, id: string) {
     const items = this.get<{ id: string }>(key);
-    this.save(key, items.filter(i => i.id !== id));
-  }
+    this.save(
+      key,
+      items.filter((i) => i.id !== id),
+    );
+  },
 };
