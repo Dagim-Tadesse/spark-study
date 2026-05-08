@@ -71,7 +71,7 @@ const Study = () => {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isStudying, isFinished, flipped, currentCardIndex, sessionCards.length]);
+  }, [isStudying, isFinished, flipped, currentCardIndex]);
 
   const sessionCards = useMemo(() => {
     if (!selectedDeckId) return [];
