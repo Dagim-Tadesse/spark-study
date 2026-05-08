@@ -9,107 +9,84 @@ interface AuthUser {
 interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
+  ready: boolean;
+  signIn: (email: string, password: string) => Promise<any>;
+  signUp: (email: string, password: string) => Promise<any>;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 /**
- * AuthProvider wraps the app with Supabase auth.
- * On mount, it hydrates the user session from Supabase' getSession() / onAuthStateChange.
- * If Supabase is not configured (empty URL/key), it silently falls back to local-only mode.
+ * AuthProvider — Supabase-only. No insecure local fallback.
+ * If Supabase env vars are missing, auth methods throw a clear error
+ * instead of silently letting any email/password through.
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [ready, setReady] = useState(false);
 
-  // Check if Supabase is configured
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) {
-      // Supabase not configured; fall back to localStorage
-      const savedUser = localStorage.getItem("spark-study-user");
-      if (savedUser) {
-        setUser(JSON.parse(savedUser) as AuthUser);
-      }
+      console.warn(
+        "[Auth] Supabase env vars missing. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (or VITE_SUPABASE_PUBLISHABLE_KEY).",
+      );
       setLoading(false);
+      setReady(true);
       return;
     }
 
-    // Supabase configured; hydrate session
-    (async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (session?.user) {
-          setUser({
-            id: session.user.id,
-            email: session.user.email || "",
-          });
-        }
-      } catch (error) {
-        console.error("Failed to get session:", error);
-      } finally {
-        setLoading(false);
-      }
-    })();
-
-    // Listen for auth changes
+    // Set up listener BEFORE getSession (Supabase best practice)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email || "",
-        });
+        setUser({ id: session.user.id, email: session.user.email || "" });
       } else {
         setUser(null);
       }
     });
 
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        if (session?.user) {
+          setUser({ id: session.user.id, email: session.user.email || "" });
+        }
+      })
+      .catch((err) => console.error("[Auth] getSession failed:", err))
+      .finally(() => {
+        setLoading(false);
+        setReady(true);
+      });
+
     return () => {
       subscription?.unsubscribe();
     };
-  }, [isSupabaseConfigured]);
+  }, []);
 
-  // Save user to localStorage as a fallback
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem("spark-study-user", JSON.stringify(user));
-    } else {
-      localStorage.removeItem("spark-study-user");
+  const requireSupabase = () => {
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error(
+        "Authentication is not configured. Connect Lovable Cloud or set VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY.",
+      );
     }
-  }, [user]);
+  };
 
   const signIn = async (email: string, password: string) => {
-    if (!isSupabaseConfigured || !supabase) {
-      // Local mode: just accept the email
-      setUser({ id: email || "local-user", email: email || "user@spark.study" });
-      return { user: { id: email }, session: {} };
-    }
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    requireSupabase();
+    const { data, error } = await supabase!.auth.signInWithPassword({ email, password });
     if (error) throw error;
     return data;
   };
 
   const signUp = async (email: string, password: string) => {
-    if (!isSupabaseConfigured || !supabase) {
-      // Local mode: just accept the email
-      const fakeUser = { id: email || "local-user", email: email || "user@spark.study" };
-      setUser(fakeUser);
-      return { user: fakeUser, session: {} };
-    }
-
-    const { data, error } = await supabase.auth.signUp({
+    requireSupabase();
+    const { data, error } = await supabase!.auth.signUp({
       email,
       password,
+      options: { emailRedirectTo: `${window.location.origin}/decks` },
     });
     if (error) throw error;
     return data;
@@ -123,14 +100,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const value = useMemo<AuthContextValue>(
-    () => ({
-      user,
-      loading,
-      signIn: signIn as any,
-      signUp: signUp as any,
-      signOut,
-    }),
-    [user, loading],
+    () => ({ user, loading, ready, signIn, signUp, signOut }),
+    [user, loading, ready],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -138,8 +109,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 }
