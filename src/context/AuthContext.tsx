@@ -11,8 +11,9 @@ interface AuthContextValue {
   loading: boolean;
   ready: boolean;
   signIn: (email: string, password: string) => Promise<any>;
-  signUp: (email: string, password: string) => Promise<any>;
+  signUp: (email: string, password: string, name?: string) => Promise<any>;
   signOut: () => Promise<void>;
+  enableDemoMode: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -81,26 +82,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return data;
   };
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, name?: string) => {
     requireSupabase();
     const { data, error } = await supabase!.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: `${window.location.origin}/decks` },
+      options: { 
+        emailRedirectTo: `${window.location.origin}/decks`,
+        data: { display_name: name }
+      },
     });
     if (error) throw error;
     return data;
   };
 
   const signOut = async () => {
-    if (isSupabaseConfigured && supabase) {
-      await supabase.auth.signOut();
+    try {
+      if (isSupabaseConfigured && supabase) {
+        await supabase.auth.signOut();
+      }
+    } catch (err) {
+      console.error("Sign out error:", err);
+    } finally {
+      setUser(null);
+      localStorage.removeItem("spark-study-demo-mode");
+      window.location.href = "/";
     }
-    setUser(null);
   };
 
+  const enableDemoMode = () => {
+    setUser({ id: "demo-user-123", email: "demo@example.com" });
+    localStorage.setItem("spark-study-demo-mode", "true");
+    setLoading(false);
+  };
+
+  // Rehydrate demo mode on refresh
+  useEffect(() => {
+    if (localStorage.getItem("spark-study-demo-mode") === "true") {
+      setUser({ id: "demo-user-123", email: "demo@example.com" });
+    }
+  }, []);
+
   const value = useMemo<AuthContextValue>(
-    () => ({ user, loading, ready, signIn, signUp, signOut }),
+    () => ({ user, loading, ready, signIn, signUp, signOut, enableDemoMode }),
     [user, loading, ready],
   );
 

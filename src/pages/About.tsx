@@ -1,5 +1,5 @@
 import Layout from "../components/Layout";
-import { Github, Mail, Heart } from "lucide-react";
+import { Github, Mail, Heart, Sparkles } from "lucide-react";
 
 const About = () => {
   return (
@@ -35,7 +35,6 @@ const About = () => {
           <div className="grid gap-4 sm:grid-cols-2">
             {[
               { name: "MLFI Team", role: "Design & engineering", initials: "MT" },
-              { name: "HCI Studio", role: "Research & accessibility", initials: "HS" },
             ].map((m) => (
               <article key={m.name} className="rounded-2xl border border-border bg-card p-5 flex items-center gap-4">
                 <div className="grid size-12 place-items-center rounded-full bg-gradient-primary text-primary-foreground font-black">
@@ -55,9 +54,6 @@ const About = () => {
           <div className="mt-3 flex flex-wrap gap-3 text-sm">
             <a href="mailto:hello@mlfi.app" className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 hover:border-primary">
               <Mail className="size-4" /> hello@mlfi.app
-            </a>
-            <a href="https://github.com" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 hover:border-primary">
-              <Github className="size-4" /> Source
             </a>
           </div>
         </section>
