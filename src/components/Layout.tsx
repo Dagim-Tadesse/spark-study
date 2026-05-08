@@ -32,11 +32,12 @@ const Layout = ({ children }: LayoutProps) => {
   }, [darkMode]);
 
   const navItems = [
-    { name: t("nav.dashboard"), path: "/", icon: LayoutDashboard },
+    { name: t("nav.home"), path: "/", icon: BookOpen },
+    { name: t("nav.dashboard"), path: "/dashboard", icon: LayoutDashboard },
     { name: t("nav.library"), path: "/decks", icon: Library },
     { name: t("nav.study"), path: "/study", icon: BrainCircuit },
-    { name: t("nav.help"), path: "/help", icon: HelpCircle },
-    { name: t("nav.about"), path: "/about", icon: Info },
+    { name: t("nav.help") || "Help", path: "/help", icon: HelpCircle },
+    { name: t("nav.about") || "About", path: "/about", icon: Info },
   ];
 
   return (
@@ -61,8 +62,8 @@ const Layout = ({ children }: LayoutProps) => {
                 <BookOpen className="size-4.5" />
               </div>
               <div className="hidden sm:block">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80 leading-none mb-1">MLFI</p>
-                <h1 className="font-display text-base font-bold leading-none text-foreground">Micro-Learn</h1>
+                <p className="text-[10px] font-black uppercase tracking-widest text-primary leading-none mb-1">Spark</p>
+                <h1 className="font-display text-base font-black leading-none text-foreground tracking-tight">Study</h1>
               </div>
             </Link>
 
