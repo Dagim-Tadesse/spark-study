@@ -53,6 +53,26 @@ const Study = () => {
     fetchData();
   }, [user]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!isStudying || isFinished) {
+        if (e.key === "Escape" && isStudying) setIsStudying(false);
+        return;
+      }
+      const tag = (document.activeElement?.tagName || "").toLowerCase();
+      if (tag === "input" || tag === "textarea") return;
+      const k = e.key.toLowerCase();
+      if (k === "f" || k === " ") { e.preventDefault(); setFlipped((v) => !v); }
+      else if ((k === "k" || k === "n") && flipped) { e.preventDefault(); markStudy(true); }
+      else if (k === "r" && flipped) { e.preventDefault(); markStudy(false); }
+      else if (k === "escape") setIsStudying(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isStudying, isFinished, flipped, currentCardIndex, sessionCards.length]);
+
   const sessionCards = useMemo(() => {
     if (!selectedDeckId) return [];
     const deckCards = cards.filter(c => c.deck_id === selectedDeckId);
@@ -212,9 +232,10 @@ const Study = () => {
         </div>
 
         <div className={cn("grid grid-cols-2 gap-4 transition-all duration-300", flipped ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none")}>
-          <button onClick={() => markStudy(false)} className="py-6 rounded-2xl bg-white border-2 border-border font-bold text-xl hover:border-orange-500 transition-colors">Review Again</button>
-          <button onClick={() => markStudy(true)} className="py-6 rounded-2xl bg-success text-white font-bold text-xl hover:shadow-soft transition-all">Know</button>
+          <button onClick={() => markStudy(false)} className="py-5 rounded-2xl bg-card border-2 border-border font-bold text-lg hover:border-warning hover:text-warning transition-colors">Review Again <kbd className="ml-2 text-xs opacity-60">R</kbd></button>
+          <button onClick={() => markStudy(true)} className="py-5 rounded-2xl bg-success text-success-foreground font-bold text-lg hover:shadow-soft transition-all">Know <kbd className="ml-2 text-xs opacity-80">K</kbd></button>
         </div>
+        <p className="text-center text-[11px] text-muted-foreground">Shortcuts: <kbd className="rounded bg-muted px-1.5 py-0.5">F</kbd> flip · <kbd className="rounded bg-muted px-1.5 py-0.5">K</kbd> know · <kbd className="rounded bg-muted px-1.5 py-0.5">R</kbd> review · <kbd className="rounded bg-muted px-1.5 py-0.5">Esc</kbd> end</p>
       </div>
     </Layout>
   );
