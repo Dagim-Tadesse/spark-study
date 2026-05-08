@@ -26,7 +26,7 @@ const About = () => {
           <h3 className="font-bold text-lg">Tech</h3>
           <p className="text-sm text-muted-foreground">
             React + Vite + TypeScript on the frontend, Tailwind for design tokens, and Supabase (Postgres + Auth + RLS)
-            for storage and accounts. The schema lives in <code className="rounded bg-muted px-1.5 py-0.5 text-xs">supabase/schema.sql</code>.
+            for storage and accounts.
           </p>
         </section>
 
