@@ -1,5 +1,5 @@
-import { storage } from '../lib/storage';
-import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
+import { storage } from "../lib/storage";
+import { isSupabaseConfigured, supabase } from "../lib/supabaseClient";
 
 export interface StudyEvent {
   id: string;
@@ -19,12 +19,12 @@ export const studyEventService = {
       timestamp: new Date().toISOString(),
     };
 
-    if (!isSupabaseConfigured || !supabase || userId.startsWith('demo-')) {
-      return storage.addItem<StudyEvent>('study_events', event);
+    if (!isSupabaseConfigured || !supabase || userId.startsWith("demo-")) {
+      return storage.addItem<StudyEvent>("study_events", event);
     }
 
     const { data, error } = await supabase
-      .from('spark_study_events')
+      .from("spark_study_events")
       .insert([event])
       .select()
       .single();
@@ -34,17 +34,19 @@ export const studyEventService = {
   },
 
   async getEvents(userId: string) {
-    if (!isSupabaseConfigured || !supabase || userId.startsWith('demo-')) {
-      return storage.get<StudyEvent>('study_events').filter(e => e.user_id === userId);
+    if (!isSupabaseConfigured || !supabase || userId.startsWith("demo-")) {
+      return storage
+        .get<StudyEvent>("study_events")
+        .filter((e) => e.user_id === userId);
     }
 
     const { data, error } = await supabase
-      .from('spark_study_events')
-      .select('*')
-      .eq('user_id', userId)
-      .order('timestamp', { ascending: true });
+      .from("spark_study_events")
+      .select("*")
+      .eq("user_id", userId)
+      .order("timestamp", { ascending: true });
 
     if (error) throw error;
     return data as StudyEvent[];
-  }
+  },
 };
