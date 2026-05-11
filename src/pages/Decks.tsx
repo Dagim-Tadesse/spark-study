@@ -31,6 +31,15 @@ import Layout from "../components/Layout";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import {
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import { useDraggable } from "@dnd-kit/core";
+import { useDroppable } from "@dnd-kit/core";
 
 const MarkdownRenderer = ({
   content,
@@ -121,6 +130,220 @@ const editorTools = [
   { icon: Volume2, label: "Speak", action: "tts" },
 ];
 
+const DraggableCardItem = ({
+  card,
+  isSelected,
+  onClick,
+  t,
+  onDelete,
+}: {
+  card: Card;
+  isSelected: boolean;
+  onClick: () => void;
+  t: (key: string) => string;
+  onDelete: (id: string) => void;
+}) => {
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({
+      id: card.id,
+      data: { type: "card", card },
+    });
+
+  const style = transform
+    ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+        zIndex: 50,
+      }
+    : undefined;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn("relative transition-all", isDragging && "opacity-50")}
+    >
+      <button
+        onClick={onClick}
+        className={cn(
+          "w-full group relative p-5 rounded-2xl border text-left transition-all flex flex-col justify-between overflow-hidden",
+          isSelected
+            ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-md scale-[1.01]"
+            : "border-border bg-card/50 hover:border-primary/40 hover:bg-card hover:shadow-lg",
+        )}
+      >
+        {/* Drag Handle */}
+        <div
+          {...listeners}
+          {...attributes}
+          className="absolute top-2 right-2 p-1 text-muted-foreground/30 cursor-grab active:cursor-grabbing hover:text-primary transition-colors z-20"
+        >
+          <Move className="size-4" />
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-[10px] font-black text-primary uppercase tracking-widest opacity-60">
+            {t("editor.front")}
+          </p>
+          <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+            <p
+              className={cn(
+                "font-bold text-sm truncate pr-6",
+                isSelected ? "text-primary" : "text-foreground",
+              )}
+            >
+              {card.front.replace(/<[^>]*>/g, "").slice(0, 40) || "Empty Card"}
+            </p>
+            {card.tags && card.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {card.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="px-1.5 py-0.5 rounded-md bg-primary/10 text-primary text-[8px] font-black uppercase"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between mt-auto pt-4 border-t border-border/50">
+          <div className="flex gap-2 items-center">
+            {card.front.includes("![image]") ||
+            card.back.includes("![image]") ? (
+              <div className="p-1.5 rounded-lg bg-primary/5 text-primary">
+                <ImagePlus className="size-3.5" />
+              </div>
+            ) : null}
+            {card.front.includes("[audio]") ||
+            card.back.includes("[audio]") ? (
+              <div className="p-1.5 rounded-lg bg-emerald-500/5 text-emerald-500">
+                <Volume2 className="size-3.5" />
+              </div>
+            ) : null}
+            {card.front.includes("$$") ? (
+              <div className="p-1.5 rounded-lg bg-orange-500/5 text-orange-500">
+                <Sigma className="size-3.5" />
+              </div>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(card.id);
+              }}
+              className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+            >
+              <Trash2 className="size-3.5" />
+            </button>
+            <ChevronRight
+              className={cn(
+                "size-5 text-muted-foreground group-hover:text-primary transition-transform duration-300",
+                isSelected
+                  ? "translate-x-0"
+                  : "-translate-x-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0",
+              )}
+            />
+          </div>
+        </div>
+      </button>
+    </div>
+  );
+};
+
+const DroppableDeckItem = ({
+  deck,
+  isSelected,
+  onSelect,
+  cardCount,
+  onRename,
+  onDelete,
+}: {
+  deck: Deck;
+  isSelected: boolean;
+  onSelect: () => void;
+  cardCount: number;
+  onRename: (e: React.MouseEvent) => void;
+  onDelete: (e: React.MouseEvent) => void;
+}) => {
+  const { isOver, setNodeRef } = useDroppable({
+    id: deck.id,
+    data: { type: "deck", deckId: deck.id },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "relative group transition-all rounded-2xl",
+        isOver && "ring-2 ring-primary ring-offset-2 scale-[1.03] z-10",
+      )}
+    >
+      <button
+        onClick={onSelect}
+        className={cn(
+          "w-full text-left p-4 rounded-2xl border transition-all duration-300",
+          isSelected
+            ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-[1.02]"
+            : "border-border bg-card hover:border-primary/50 hover:shadow-md",
+        )}
+      >
+        <p className="font-bold text-sm truncate pr-6">{deck.name}</p>
+        <p
+          className={cn(
+            "text-[10px] uppercase font-black mt-1",
+            isSelected ? "text-white/70" : "text-muted-foreground",
+          )}
+        >
+          {cardCount} Cards
+        </p>
+      </button>
+
+      <div
+        className={cn(
+          "absolute right-2 top-1/2 -translate-y-1/2 transition-opacity",
+          isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+        )}
+      >
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              onClick={(e) => e.stopPropagation()}
+              className={cn(
+                "p-1.5 rounded-lg transition-colors",
+                isSelected
+                  ? "hover:bg-white/20 text-white"
+                  : "hover:bg-secondary text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <MoreVertical className="size-4" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="w-48 rounded-2xl p-2 shadow-xl border-border"
+          >
+            <DropdownMenuItem
+              onClick={onRename}
+              className="rounded-xl font-bold p-3"
+            >
+              <Edit2 className="size-4 mr-3" /> Rename Deck
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-destructive rounded-xl font-bold p-3"
+              onClick={onDelete}
+            >
+              <Trash2 className="size-4 mr-3" /> Delete Deck
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
+  );
+};
+
 const Decks = () => {
   const { t } = useI18n();
   const { user } = useAuth();
@@ -157,6 +380,40 @@ const Decks = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeSide, setActiveSide] = useState<"front" | "back">("front");
   const [activeAction, setActiveAction] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Require dragging 8px before activation to allow clicking
+      },
+    }),
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+
+    const cardId = active.id as string;
+    const targetDeckId = over.id as string;
+
+    const card = cards.find((c) => c.id === cardId);
+    if (!card || card.deck_id === targetDeckId) return;
+
+    try {
+      setCards((prev) =>
+        prev.map((c) => (c.id === cardId ? { ...c, deck_id: targetDeckId } : c)),
+      );
+      await cardService.updateCard(cardId, { deck_id: targetDeckId });
+      toast.success("Card moved successfully!");
+
+      if (selectedCardId === cardId) {
+        // Switch to the target deck if the moved card was selected
+        setSelectedDeckId(targetDeckId);
+      }
+    } catch (e) {
+      toast.error("Failed to move card");
+    }
+  };
 
   // Handle beforeunload warning
   useEffect(() => {
@@ -606,7 +863,8 @@ const Decks = () => {
 
   return (
     <Layout>
-      <div className="flex flex-col lg:flex-row gap-6 lg:h-[calc(100vh-160px)] animate-fade-in">
+      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+        <div className="flex flex-col lg:flex-row gap-6 lg:h-[calc(100vh-160px)] animate-fade-in">
         {/* Left Sidebar - Decks List */}
         <aside
           className={cn(
@@ -666,87 +924,15 @@ const Decks = () => {
           </div>
           <div className="space-y-2">
             {filteredDecks.map((deck) => (
-              <div key={deck.id} className="relative group">
-                <button
-                  onClick={() => handleSelectDeck(deck.id)}
-                  className={cn(
-                    "w-full text-left p-4 rounded-2xl border transition-all duration-300",
-                    selectedDeckId === deck.id
-                      ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-[1.02]"
-                      : "border-border bg-card hover:border-primary/50 hover:shadow-md",
-                  )}
-                >
-                  {editingDeckId === deck.id ? (
-                    <input
-                      autoFocus
-                      type="text"
-                      value={editingDeckName}
-                      onChange={(e) => setEditingDeckName(e.target.value)}
-                      onBlur={saveDeckName}
-                      onKeyDown={(e) => e.key === "Enter" && saveDeckName()}
-                      onClick={(e) => e.stopPropagation()}
-                      className="w-full bg-background border border-primary rounded px-2 py-1 text-sm font-bold outline-none text-foreground"
-                    />
-                  ) : (
-                    <p className="font-bold text-sm truncate pr-6">
-                      {deck.name}
-                    </p>
-                  )}
-                  <p
-                    className={cn(
-                      "text-[10px] uppercase font-black mt-1",
-                      selectedDeckId === deck.id
-                        ? "text-white/70"
-                        : "text-muted-foreground",
-                    )}
-                  >
-                    {cards.filter((c) => c.deck_id === deck.id).length}{" "}
-                    {t("library.cards")}
-                  </p>
-                </button>
-
-                <div
-                  className={cn(
-                    "absolute right-2 top-1/2 -translate-y-1/2 transition-opacity",
-                    selectedDeckId === deck.id
-                      ? "opacity-100"
-                      : "opacity-0 group-hover:opacity-100",
-                  )}
-                >
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        onClick={(e) => e.stopPropagation()}
-                        className={cn(
-                          "p-1.5 rounded-lg transition-colors",
-                          selectedDeckId === deck.id
-                            ? "hover:bg-white/20 text-white"
-                            : "hover:bg-secondary text-muted-foreground hover:text-foreground",
-                        )}
-                      >
-                        <MoreVertical className="size-4" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      align="end"
-                      className="w-48 rounded-2xl p-2 shadow-xl border-border"
-                    >
-                      <DropdownMenuItem
-                        onClick={(e) => startEditingDeck(deck, e as any)}
-                        className="rounded-xl font-bold p-3"
-                      >
-                        <Edit2 className="size-4 mr-3" /> Rename Deck
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="text-destructive rounded-xl font-bold p-3"
-                        onClick={(e) => confirmDeleteDeck(deck.id, e as any)}
-                      >
-                        <Trash2 className="size-4 mr-3" /> Delete Deck
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </div>
+              <DroppableDeckItem
+                key={deck.id}
+                deck={deck}
+                isSelected={selectedDeckId === deck.id}
+                onSelect={() => handleSelectDeck(deck.id)}
+                cardCount={cards.filter((c) => c.deck_id === deck.id).length}
+                onRename={(e) => startEditingDeck(deck, e)}
+                onDelete={(e) => confirmDeleteDeck(deck.id, e)}
+              />
             ))}
             {filteredDecks.length === 0 && (
               <div className="py-12 text-center bg-secondary/5 rounded-3xl border-2 border-dashed border-border/30">
@@ -996,88 +1182,14 @@ const Decks = () => {
                   </div>
                   <div className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar min-h-0">
                     {deckCards.map((c) => (
-                      <button
+                      <DraggableCardItem
                         key={c.id}
+                        card={c}
+                        isSelected={selectedCardId === c.id}
                         onClick={() => handleSelectCard(c)}
-                        className={cn(
-                          "w-full group relative p-5 rounded-2xl border text-left transition-all flex flex-col justify-between overflow-hidden",
-                          selectedCardId === c.id
-                            ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-md scale-[1.01]"
-                            : "border-border bg-card/50 hover:border-primary/40 hover:bg-card hover:shadow-lg",
-                        )}
-                      >
-                        <div className="space-y-2">
-                          <p className="text-[10px] font-black text-primary uppercase tracking-widest opacity-60">
-                            {t("editor.front")}
-                          </p>
-                          <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-                            <p
-                              className={cn(
-                                "font-bold text-sm truncate",
-                                selectedCardId === c.id
-                                  ? "text-primary"
-                                  : "text-foreground",
-                              )}
-                            >
-                              {c.front.replace(/<[^>]*>/g, "").slice(0, 40) ||
-                                "Empty Card"}
-                            </p>
-                            {c.tags && c.tags.length > 0 && (
-                              <div className="flex flex-wrap gap-1">
-                                {c.tags.map((t) => (
-                                  <span
-                                    key={t}
-                                    className="px-1.5 py-0.5 rounded-md bg-primary/10 text-primary text-[8px] font-black uppercase"
-                                  >
-                                    {t}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between mt-auto pt-4 border-t border-border/50">
-                          <div className="flex gap-2 items-center">
-                            {c.front.includes("![image]") ||
-                            c.back.includes("![image]") ? (
-                              <div className="p-1.5 rounded-lg bg-primary/5 text-primary">
-                                <ImagePlus className="size-3.5" />
-                              </div>
-                            ) : null}
-                            {c.front.includes("[audio]") ||
-                            c.back.includes("[audio]") ? (
-                              <div className="p-1.5 rounded-lg bg-emerald-500/5 text-emerald-500">
-                                <Volume2 className="size-3.5" />
-                              </div>
-                            ) : null}
-                            {c.front.includes("$$") ? (
-                              <div className="p-1.5 rounded-lg bg-orange-500/5 text-orange-500">
-                                <Sigma className="size-3.5" />
-                              </div>
-                            ) : null}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteCard(c.id);
-                              }}
-                              className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                            >
-                              <Trash2 className="size-3.5" />
-                            </button>
-                            <ChevronRight
-                              className={cn(
-                                "size-5 text-muted-foreground group-hover:text-primary transition-transform duration-300",
-                                selectedCardId === c.id
-                                  ? "translate-x-0"
-                                  : "-translate-x-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0",
-                              )}
-                            />
-                          </div>
-                        </div>
-                      </button>
+                        t={t}
+                        onDelete={deleteCard}
+                      />
                     ))}
                     {!deckCards.length && (
                       <div className="py-20 flex flex-col items-center justify-center text-center bg-secondary/5 rounded-3xl border-2 border-dashed border-border/30">
@@ -1122,6 +1234,7 @@ const Decks = () => {
         accept="image/*"
         className="hidden"
       />
+      </DndContext>
     </Layout>
   );
 };

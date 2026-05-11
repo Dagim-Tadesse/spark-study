@@ -93,8 +93,11 @@ const Study = () => {
   const [flipped, setFlipped] = useState(false);
   const [sessionCount, setSessionCount] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
+  const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
+  const [recallTimeLeft, setRecallTimeLeft] = useState(10);
+  const [suggestAgain, setSuggestAgain] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!user) return;
     try {
       setIsLoading(true);
@@ -111,11 +114,11 @@ const Study = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     fetchData();
-  }, [user]);
+  }, [fetchData]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -151,6 +154,28 @@ const Study = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isStudying, isFinished, flipped, currentCardIndex]);
 
+  // Recall Timer Logic
+  useEffect(() => {
+    if (!isStudying || isFinished || flipped) {
+      setRecallTimeLeft(10);
+      setSuggestAgain(false);
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setRecallTimeLeft((prev) => {
+        if (prev <= 1) {
+          setSuggestAgain(true);
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isStudying, isFinished, flipped, currentCardIndex]);
+
   const sessionCards = useMemo(() => {
     if (!selectedDeckId) return [];
     const deckCards = cards.filter((c) => c.deck_id === selectedDeckId);
@@ -168,6 +193,9 @@ const Study = () => {
     setIsStudying(true);
     setIsFinished(false);
     setSessionCount(0);
+    setSessionStartTime(Date.now());
+    setRecallTimeLeft(10);
+    setSuggestAgain(false);
   };
 
   const markStudy = async (grade: SRSGrade) => {
@@ -233,7 +261,11 @@ const Study = () => {
       .catch(console.error);
 
     if (currentCardIndex < sessionCards.length - 1) {
-      setTimeout(() => setCurrentCardIndex((prev) => prev + 1), 300);
+      setTimeout(() => {
+        setCurrentCardIndex((prev) => prev + 1);
+        setRecallTimeLeft(10);
+        setSuggestAgain(false);
+      }, 300);
     } else {
       setIsFinished(true);
       confetti({
@@ -373,6 +405,14 @@ const Study = () => {
                 {profile?.streak}
               </p>
             </div>
+            <div className="bg-card p-6 rounded-3xl border border-border shadow-sm col-span-2">
+              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">
+                Session Duration
+              </p>
+              <p className="text-3xl font-black">
+                {sessionStartTime ? Math.floor((Date.now() - sessionStartTime) / 60000) : 0}m {sessionStartTime ? Math.floor(((Date.now() - sessionStartTime) % 60000) / 1000) : 0}s
+              </p>
+            </div>
           </div>
           <button
             onClick={() => setIsStudying(false)}
@@ -500,6 +540,45 @@ const Study = () => {
                   <div className="text-2xl md:text-4xl font-bold leading-tight drop-shadow-sm w-full">
                     <MarkdownRenderer content={currentCard?.front || ""} />
                   </div>
+
+                  {/* Recall Timer Ring */}
+                  {!flipped && (
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                      <svg className="size-64 -rotate-90">
+                        <circle
+                          cx="128"
+                          cy="128"
+                          r="120"
+                          stroke="white"
+                          strokeWidth="4"
+                          fill="transparent"
+                          className="opacity-10"
+                        />
+                        <motion.circle
+                          cx="128"
+                          cy="128"
+                          r="120"
+                          stroke="white"
+                          strokeWidth="4"
+                          fill="transparent"
+                          strokeDasharray={754}
+                          initial={{ strokeDashoffset: 0 }}
+                          animate={{ strokeDashoffset: 754 * (1 - recallTimeLeft / 10) }}
+                          className="opacity-30"
+                        />
+                      </svg>
+                    </div>
+                  )}
+
+                  {suggestAgain && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="absolute top-24 bg-destructive text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg"
+                    >
+                      Time's up! Suggest marking as "Again"
+                    </motion.div>
+                  )}
                   <div className="absolute bottom-8 flex items-center gap-4">
                     <p className="text-white/50 text-xs font-medium animate-pulse">
                       {t("study.tapToFlip")}
