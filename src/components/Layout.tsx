@@ -13,6 +13,7 @@ import {
   Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CommandPalette } from "./CommandPalette";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -124,6 +125,7 @@ const Layout = ({ children }: LayoutProps) => {
           ))}
         </div>
       </div>
+      <CommandPalette />
     </div>
   );
 };

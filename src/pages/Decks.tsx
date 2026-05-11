@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Plus,
@@ -24,6 +24,7 @@ import {
   Heading1,
   Tag,
 } from "lucide-react";
+import { useI18n } from "../contexts/I18nContext";
 import { useAuth } from "../context/AuthContext";
 import { deckService, Deck } from "../services/deckService";
 import { cardService, Card } from "../services/cardService";
@@ -40,309 +41,11 @@ import {
 } from "@dnd-kit/core";
 import { useDraggable } from "@dnd-kit/core";
 import { useDroppable } from "@dnd-kit/core";
+import { DeckSidebar } from "../components/decks/DeckSidebar";
+import { CardList } from "../components/decks/CardList";
+import { FlashcardEditor } from "../components/decks/FlashcardEditor";
 
-const MarkdownRenderer = ({
-  content,
-  className,
-}: {
-  content: string;
-  className?: string;
-}) => {
-  // If content looks like HTML, render it as is
-  if (content.includes("<") && content.includes(">")) {
-    return (
-      <div
-        className={cn(
-          "prose prose-sm dark:prose-invert max-w-none w-full break-words",
-          className,
-        )}
-        dangerouslySetInnerHTML={{ __html: content }}
-      />
-    );
-  }
-
-  const renderLine = (line: string, i: number) => {
-    // Basic Markdown support for old cards
-    const imgMatch = line.match(/!\[(.*?)\]\((.*?)\)/);
-    if (imgMatch)
-      return (
-        <img
-          key={i}
-          src={imgMatch[2]}
-          alt={imgMatch[1]}
-          className="max-w-full max-h-[300px] rounded-xl shadow-lg my-4 object-contain mx-auto"
-        />
-      );
-
-    if (line.startsWith("# "))
-      return (
-        <h1
-          key={i}
-          className="text-2xl font-black border-b border-border/50 pb-2 mb-4 mt-6"
-        >
-          {line.slice(2)}
-        </h1>
-      );
-    if (line.startsWith("- "))
-      return (
-        <li key={i} className="ml-4 list-disc">
-          {line.slice(2)}
-        </li>
-      );
-
-    const parts = line.split(/(\*\*.*?\*\*)/g);
-    return (
-      <p key={i} className={cn("leading-relaxed", className)}>
-        {parts.map((part, j) => {
-          if (part.startsWith("**") && part.endsWith("**")) {
-            return (
-              <strong key={j} className="text-primary font-black">
-                {part.slice(2, -2)}
-              </strong>
-            );
-          }
-          return part;
-        })}
-      </p>
-    );
-  };
-
-  return (
-    <div className="space-y-3 w-full py-2">
-      {content.split("\n").map((line, i) => renderLine(line, i))}
-    </div>
-  );
-};
-import { useI18n } from "../contexts/I18nContext";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
-const editorTools = [
-  { icon: Heading1, label: "Header", action: "header" },
-  { icon: Italic, label: "Italic", action: "italic" },
-  { icon: List, label: "List", action: "list" },
-  { icon: Sigma, label: "Math", action: "math" },
-  { icon: ImagePlus, label: "Image", action: "image-upload" },
-  { icon: Volume2, label: "Speak", action: "tts" },
-];
-
-const DraggableCardItem = ({
-  card,
-  isSelected,
-  onClick,
-  t,
-  onDelete,
-}: {
-  card: Card;
-  isSelected: boolean;
-  onClick: () => void;
-  t: (key: string) => string;
-  onDelete: (id: string) => void;
-}) => {
-  const { attributes, listeners, setNodeRef, transform, isDragging } =
-    useDraggable({
-      id: card.id,
-      data: { type: "card", card },
-    });
-
-  const style = transform
-    ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-        zIndex: 50,
-      }
-    : undefined;
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={cn("relative transition-all", isDragging && "opacity-50")}
-    >
-      <button
-        onClick={onClick}
-        className={cn(
-          "w-full group relative p-5 rounded-2xl border text-left transition-all flex flex-col justify-between overflow-hidden",
-          isSelected
-            ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-md scale-[1.01]"
-            : "border-border bg-card/50 hover:border-primary/40 hover:bg-card hover:shadow-lg",
-        )}
-      >
-        {/* Drag Handle */}
-        <div
-          {...listeners}
-          {...attributes}
-          className="absolute top-2 right-2 p-1 text-muted-foreground/30 cursor-grab active:cursor-grabbing hover:text-primary transition-colors z-20"
-        >
-          <Move className="size-4" />
-        </div>
-
-        <div className="space-y-2">
-          <p className="text-[10px] font-black text-primary uppercase tracking-widest opacity-60">
-            {t("editor.front")}
-          </p>
-          <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-            <p
-              className={cn(
-                "font-bold text-sm truncate pr-6",
-                isSelected ? "text-primary" : "text-foreground",
-              )}
-            >
-              {card.front.replace(/<[^>]*>/g, "").slice(0, 40) || "Empty Card"}
-            </p>
-            {card.tags && card.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {card.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-1.5 py-0.5 rounded-md bg-primary/10 text-primary text-[8px] font-black uppercase"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between mt-auto pt-4 border-t border-border/50">
-          <div className="flex gap-2 items-center">
-            {card.front.includes("![image]") ||
-            card.back.includes("![image]") ? (
-              <div className="p-1.5 rounded-lg bg-primary/5 text-primary">
-                <ImagePlus className="size-3.5" />
-              </div>
-            ) : null}
-            {card.front.includes("[audio]") ||
-            card.back.includes("[audio]") ? (
-              <div className="p-1.5 rounded-lg bg-emerald-500/5 text-emerald-500">
-                <Volume2 className="size-3.5" />
-              </div>
-            ) : null}
-            {card.front.includes("$$") ? (
-              <div className="p-1.5 rounded-lg bg-orange-500/5 text-orange-500">
-                <Sigma className="size-3.5" />
-              </div>
-            ) : null}
-          </div>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(card.id);
-              }}
-              className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-            >
-              <Trash2 className="size-3.5" />
-            </button>
-            <ChevronRight
-              className={cn(
-                "size-5 text-muted-foreground group-hover:text-primary transition-transform duration-300",
-                isSelected
-                  ? "translate-x-0"
-                  : "-translate-x-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0",
-              )}
-            />
-          </div>
-        </div>
-      </button>
-    </div>
-  );
-};
-
-const DroppableDeckItem = ({
-  deck,
-  isSelected,
-  onSelect,
-  cardCount,
-  onRename,
-  onDelete,
-}: {
-  deck: Deck;
-  isSelected: boolean;
-  onSelect: () => void;
-  cardCount: number;
-  onRename: (e: React.MouseEvent) => void;
-  onDelete: (e: React.MouseEvent) => void;
-}) => {
-  const { isOver, setNodeRef } = useDroppable({
-    id: deck.id,
-    data: { type: "deck", deckId: deck.id },
-  });
-
-  return (
-    <div
-      ref={setNodeRef}
-      className={cn(
-        "relative group transition-all rounded-2xl",
-        isOver && "ring-2 ring-primary ring-offset-2 scale-[1.03] z-10",
-      )}
-    >
-      <button
-        onClick={onSelect}
-        className={cn(
-          "w-full text-left p-4 rounded-2xl border transition-all duration-300",
-          isSelected
-            ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-[1.02]"
-            : "border-border bg-card hover:border-primary/50 hover:shadow-md",
-        )}
-      >
-        <p className="font-bold text-sm truncate pr-6">{deck.name}</p>
-        <p
-          className={cn(
-            "text-[10px] uppercase font-black mt-1",
-            isSelected ? "text-white/70" : "text-muted-foreground",
-          )}
-        >
-          {cardCount} Cards
-        </p>
-      </button>
-
-      <div
-        className={cn(
-          "absolute right-2 top-1/2 -translate-y-1/2 transition-opacity",
-          isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100",
-        )}
-      >
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              onClick={(e) => e.stopPropagation()}
-              className={cn(
-                "p-1.5 rounded-lg transition-colors",
-                isSelected
-                  ? "hover:bg-white/20 text-white"
-                  : "hover:bg-secondary text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <MoreVertical className="size-4" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="w-48 rounded-2xl p-2 shadow-xl border-border"
-          >
-            <DropdownMenuItem
-              onClick={onRename}
-              className="rounded-xl font-bold p-3"
-            >
-              <Edit2 className="size-4 mr-3" /> Rename Deck
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-destructive rounded-xl font-bold p-3"
-              onClick={onDelete}
-            >
-              <Trash2 className="size-4 mr-3" /> Delete Deck
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    </div>
-  );
-};
+// Components moved to separate files
 
 const Decks = () => {
   const { t } = useI18n();
@@ -475,12 +178,20 @@ const Decks = () => {
   // Handle incoming actions from other pages
   useEffect(() => {
     const state = (window.history.state as any)?.usr;
+    if (!state) return;
     if (state?.action === "new-deck") {
       addDeck();
       // Clear state so it doesn't trigger again on refresh
       window.history.replaceState({}, document.title);
+    } else if (state?.deckId) {
+      handleSelectDeck(state.deckId);
+      if (state.cardId) {
+        const card = cards.find((c) => c.id === state.cardId);
+        if (card) handleSelectCard(card);
+      }
+      window.history.replaceState({}, document.title);
     }
-  }, [decks]); // Trigger once decks are loaded so addDeck can name it correctly
+  }, [decks, cards]); // Trigger when data is loaded
 
   const deckCards = useMemo(() => {
     let filtered = cards.filter((c) => c.deck_id === selectedDeckId);
@@ -503,56 +214,61 @@ const Decks = () => {
       ),
     [decks, searchTerm],
   );
-
-  const handleSelectDeck = (deckId: string | null) => {
-    if (!deckId) {
-      setSelectedDeckId(null);
-      setSelectedCardId(null);
-      setLocalFront("");
-      setLocalBack("");
+const handleSelectDeck = useCallback(
+    (deckId: string | null) => {
+      if (!deckId) {
+        setSelectedDeckId(null);
+        setSelectedCardId(null);
+        setLocalFront("");
+        setLocalBack("");
+        setShowSafety(false);
+        return;
+      }
+      setSelectedDeckId(deckId);
+      const firstCard = cards.find((c) => c.deck_id === deckId);
+      if (firstCard) {
+        setSelectedCardId(firstCard.id);
+        setLocalFront(firstCard.front);
+        setLocalBack(firstCard.back);
+        setLocalTag(firstCard.tags?.[0] || "");
+      } else {
+        setSelectedCardId(null);
+        setLocalFront("");
+        setLocalBack("");
+        setLocalTag("");
+      }
       setShowSafety(false);
-      return;
-    }
-    setSelectedDeckId(deckId);
-    const firstCard = cards.find((c) => c.deck_id === deckId);
-    if (firstCard) {
-      setSelectedCardId(firstCard.id);
-      setLocalFront(firstCard.front);
-      setLocalBack(firstCard.back);
-      setLocalTag(firstCard.tags?.[0] || "");
-    } else {
-      setSelectedCardId(null);
-      setLocalFront("");
-      setLocalBack("");
-      setLocalTag("");
-    }
-    setShowSafety(false);
-    setShowMoveDialog(false);
-  };
+      setShowMoveDialog(false);
+    },
+    [cards],
+  );
 
-  const handleSelectCard = (card: Card) => {
-    if (pendingSaveRef.current && pendingSaveRef.current.id !== card.id) {
-      // Flush previous save before switching if switching cards rapidly
-      const pending = pendingSaveRef.current;
-      cardService.updateCard(pending.id, pending.updates).catch(console.error);
-      pendingSaveRef.current = null;
-    }
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+  const handleSelectCard = useCallback(
+    (card: Card) => {
+      if (pendingSaveRef.current && pendingSaveRef.current.id !== card.id) {
+        // Flush previous save before switching if switching cards rapidly
+        const pending = pendingSaveRef.current;
+        cardService.updateCard(pending.id, pending.updates).catch(console.error);
+        pendingSaveRef.current = null;
+      }
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
 
-    setSelectedCardId(card.id);
-    setLocalFront(card.front);
-    setLocalBack(card.back);
-    setLocalTag(card.tags?.[0] || "");
+      setSelectedCardId(card.id);
+      setLocalFront(card.front);
+      setLocalBack(card.back);
+      setLocalTag(card.tags?.[0] || "");
 
-    // Sync DOM directly once when card changes
-    setTimeout(() => {
-      if (editorRef.current)
-        editorRef.current.innerHTML =
-          activeSide === "front" ? card.front : card.back;
-    }, 0);
-    setShowSafety(false);
-    setShowMoveDialog(false);
-  };
+      // Sync DOM directly once when card changes
+      setTimeout(() => {
+        if (editorRef.current)
+          editorRef.current.innerHTML =
+            activeSide === "front" ? card.front : card.back;
+      }, 0);
+      setShowSafety(false);
+      setShowMoveDialog(false);
+    },
+    [activeSide],
+  );
 
   const handleUpdateContent = (updates: {
     front?: string;
@@ -582,7 +298,7 @@ const Decks = () => {
 
     pendingSaveRef.current = {
       id: selectedCardId,
-      updates: fullUpdates as any,
+      updates: fullUpdates as Partial<Card>,
     };
 
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
@@ -619,11 +335,12 @@ const Decks = () => {
       case "list":
         document.execCommand("insertUnorderedList");
         break;
-      case "header":
+      case "header": {
         const isH1 = document.queryCommandValue("formatBlock") === "h1";
         document.execCommand("formatBlock", false, isH1 ? "p" : "h1");
         break;
-      case "math":
+      }
+      case "math": {
         const math = window.prompt("Enter LaTeX math:", "e = mc^2");
         if (math)
           document.execCommand(
@@ -632,15 +349,17 @@ const Decks = () => {
             `<span class="math-tex text-orange-500 font-bold">$$ ${math} $$</span>`,
           );
         break;
+      }
       case "image-upload":
         triggerFileAction("image");
         return;
-      case "tts":
+      case "tts": {
         const selection = window.getSelection();
         const text = selection?.toString() || editor.innerText;
         const utterance = new SpeechSynthesisUtterance(text);
         window.speechSynthesis.speak(utterance);
         return;
+      }
     }
 
     handleUpdateContent({ [activeSide]: editor.innerHTML });
@@ -768,9 +487,10 @@ const Decks = () => {
     }
   };
 
-  const addDeck = async () => {
+  const addDeck = useCallback(async () => {
     if (!user) return;
-    const finalName = newDeckName.trim() || t("common.newDeck") || "Untitled Deck";
+    const finalName =
+      newDeckName.trim() || t("common.newDeck") || "Untitled Deck";
     try {
       const newDeck = await deckService.createDeck(
         user.id,
@@ -788,7 +508,7 @@ const Decks = () => {
     } catch (e) {
       toast.error("Error creating deck");
     }
-  };
+  }, [user, newDeckName, t]);
 
   const startEditingDeck = (deck: Deck, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -866,84 +586,27 @@ const Decks = () => {
       <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
         <div className="flex flex-col lg:flex-row gap-6 lg:h-[calc(100vh-160px)] animate-fade-in">
         {/* Left Sidebar - Decks List */}
-        <aside
-          className={cn(
-            "w-full lg:w-72 shrink-0 flex flex-col gap-4 lg:overflow-y-auto lg:pr-2 custom-scrollbar transition-all duration-300",
-            selectedDeckId && "hidden lg:flex",
-          )}
-        >
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-black flex items-center gap-2">
-              <Library className="size-5 text-primary" /> {t("nav.library")}
-            </h2>
-            <button
-              onClick={() => setIsCreatingDeck(true)}
-              aria-label={t("common.newDeck")}
-              className="p-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-all"
-            >
-              <Plus className="size-5" />
-            </button>
-          </div>
-
-          {isCreatingDeck && (
-            <div className="bg-primary/5 p-4 rounded-2xl border border-primary/20 space-y-3 animate-in slide-in-from-top-2">
-              <input
-                autoFocus
-                type="text"
-                placeholder="Deck name..."
-                value={newDeckName}
-                onChange={(e) => setNewDeckName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addDeck()}
-                className="w-full bg-background border border-border rounded-xl px-4 py-2 text-sm font-bold outline-none focus:border-primary"
-              />
-              <div className="flex gap-2">
-                <button
-                  onClick={addDeck}
-                  className="flex-1 bg-primary text-white py-2 rounded-xl text-xs font-black"
-                >
-                  Create
-                </button>
-                <button
-                  onClick={() => setIsCreatingDeck(false)}
-                  className="flex-1 bg-secondary py-2 rounded-xl text-xs font-black"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
-          <div className="relative group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-            <input
-              type="text"
-              placeholder={t("common.search")}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-card/50 text-sm outline-none focus:bg-card focus:ring-2 focus:ring-primary/20 transition-all"
-            />
-          </div>
-          <div className="space-y-2">
-            {filteredDecks.map((deck) => (
-              <DroppableDeckItem
-                key={deck.id}
-                deck={deck}
-                isSelected={selectedDeckId === deck.id}
-                onSelect={() => handleSelectDeck(deck.id)}
-                cardCount={cards.filter((c) => c.deck_id === deck.id).length}
-                onRename={(e) => startEditingDeck(deck, e)}
-                onDelete={(e) => confirmDeleteDeck(deck.id, e)}
-              />
-            ))}
-            {filteredDecks.length === 0 && (
-              <div className="py-12 text-center bg-secondary/5 rounded-3xl border-2 border-dashed border-border/30">
-                <Library className="size-8 mx-auto text-muted-foreground/30 mb-3" />
-                <p className="text-sm font-bold text-muted-foreground">
-                  {t("library.noDecks")}
-                </p>
-              </div>
-            )}
-          </div>
-        </aside>
+        <DeckSidebar
+          filteredDecks={filteredDecks}
+          selectedDeckId={selectedDeckId}
+          onSelectDeck={handleSelectDeck}
+          isCreatingDeck={isCreatingDeck}
+          setIsCreatingDeck={setIsCreatingDeck}
+          newDeckName={newDeckName}
+          setNewDeckName={setNewDeckName}
+          onAddDeck={addDeck}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          editingDeckId={editingDeckId}
+          editingDeckName={editingDeckName}
+          setEditingDeckName={setEditingDeckName}
+          onSaveDeckName={saveDeckName}
+          onStartEditingDeck={startEditingDeck}
+          onConfirmDeleteDeck={confirmDeleteDeck}
+          getCardCount={(id) => cards.filter((c) => c.deck_id === id).length}
+          t={t}
+          decks={[]} // Unused for now
+        />
 
         <main
           className={cn(
@@ -1018,189 +681,31 @@ const Decks = () => {
               </div>
 
               <div className="flex-1 grid grid-cols-1 xl:grid-cols-[1.1fr_0.9fr] gap-6 lg:overflow-hidden min-h-0">
-                {/* EDITOR SECTION */}
-                <div className="flex-1 flex flex-col gap-4 bg-card border border-border rounded-[2.5rem] p-6 shadow-sm min-h-0 min-w-0">
-                  <div className="flex items-center justify-between border-b border-border pb-4">
-                    <div className="flex gap-1 bg-secondary/50 p-1 rounded-xl relative">
-                      {/* Sliding Background Pill */}
-                      <motion.div
-                        layoutId="activeSideTab"
-                        className="absolute inset-y-1 rounded-lg bg-background shadow-sm"
-                        initial={false}
-                        animate={{
-                          left:
-                            activeSide === "front" ? "4px" : "calc(50% + 2px)",
-                          width: "calc(50% - 6px)",
-                        }}
-                        transition={{
-                          type: "spring",
-                          bounce: 0.2,
-                          duration: 0.4,
-                        }}
-                      />
-                      <button
-                        onClick={() => {
-                          setActiveSide("front");
-                          if (editorRef.current)
-                            editorRef.current.innerHTML = localFront;
-                        }}
-                        className={cn(
-                          "relative z-10 flex-1 px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
-                          activeSide === "front"
-                            ? "text-primary"
-                            : "text-muted-foreground hover:text-foreground",
-                        )}
-                      >
-                        {t("editor.front")}
-                      </button>
-                      <button
-                        onClick={() => {
-                          setActiveSide("back");
-                          if (editorRef.current)
-                            editorRef.current.innerHTML = localBack;
-                        }}
-                        className={cn(
-                          "relative z-10 flex-1 px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
-                          activeSide === "back"
-                            ? "text-primary"
-                            : "text-muted-foreground hover:text-foreground",
-                        )}
-                      >
-                        {t("editor.back")}
-                      </button>
-                    </div>
+                <FlashcardEditor
+                  activeSide={activeSide}
+                  setActiveSide={setActiveSide}
+                  localFront={localFront}
+                  localBack={localBack}
+                  localTag={localTag}
+                  handleUpdateContent={handleUpdateContent}
+                  handleEditorAction={handleEditorAction}
+                  editorRef={editorRef}
+                  autosaveText={autosaveText}
+                  selectedCardId={selectedCardId}
+                  onDuplicateCard={duplicateCard}
+                  onAddCard={() => addCard()}
+                  t={t}
+                />
 
-                    <div className="hidden sm:flex gap-1">
-                      {editorTools.map((tool) => (
-                        <button
-                          key={tool.label}
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => handleEditorAction(tool.action)}
-                          className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-primary transition-all group relative"
-                          title={tool.label}
-                        >
-                          <tool.icon className="size-4" />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex-1 relative min-h-[300px] overflow-hidden">
-                    <div
-                      ref={editorRef}
-                      contentEditable
-                      onInput={(e) =>
-                        handleUpdateContent({
-                          [activeSide]: e.currentTarget.innerHTML,
-                        })
-                      }
-                      className="w-full h-full overflow-y-auto bg-transparent py-4 text-lg font-medium outline-none placeholder:text-muted-foreground/30 leading-relaxed custom-scrollbar prose prose-sm dark:prose-invert max-w-none 
-                        [&_h1]:text-3xl [&_h1]:font-black [&_h1]:mb-4 [&_h1]:text-primary
-                        [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4
-                        [&_img]:rounded-2xl [&_img]:shadow-lg [&_img]:my-6"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-3">
-                    <div className="flex flex-wrap gap-2">
-                      {["Definition", "Formula", "Q&A", "Diagram"].map(
-                        (tag) => (
-                          <button
-                            key={tag}
-                            onClick={() => {
-                              const tags = localTag.includes(tag) ? [] : [tag];
-                              handleUpdateContent({ tag: tags[0] || "" });
-                            }}
-                            className={cn(
-                              "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter transition-all border",
-                              localTag === tag
-                                ? "bg-primary text-white border-primary"
-                                : "bg-secondary/50 text-muted-foreground border-border hover:border-primary/50",
-                            )}
-                          >
-                            {tag}
-                          </button>
-                        ),
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-secondary/30 rounded-xl border border-border/50">
-                      <Tag className="size-3.5 text-muted-foreground" />
-                      <input
-                        type="text"
-                        value={localTag}
-                        placeholder={t("common.addTag")}
-                        onChange={(e) =>
-                          handleUpdateContent({ tag: e.target.value })
-                        }
-                        className="bg-transparent text-xs font-bold outline-none flex-1 placeholder:font-normal"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-4 border-t border-border">
-                    <div className="flex items-center gap-2">
-                      <div className="size-2 rounded-full bg-success animate-pulse" />
-                      <span className="text-[10px] font-bold text-success uppercase tracking-wider">
-                        {autosaveText}
-                      </span>
-                    </div>
-                    <div className="flex gap-3">
-                      <button
-                        onClick={duplicateCard}
-                        disabled={!selectedCardId}
-                        className="p-2.5 rounded-xl hover:bg-secondary border border-border text-muted-foreground transition-all disabled:opacity-30"
-                        title="Duplicate"
-                      >
-                        <Copy className="size-4" />
-                      </button>
-                      <button
-                        onClick={() => addCard()}
-                        className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 rounded-xl font-black text-sm hover:opacity-90 shadow-lg shadow-primary/20 transition-all"
-                      >
-                        <Plus className="size-4" /> {t("common.add")}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* CARD LIST SECTION */}
-                <div className="w-full lg:w-96 bg-card border border-border rounded-[2.5rem] p-6 shadow-sm flex flex-col min-h-0 overflow-hidden">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
-                      {t("dashboard.upcoming")} ({deckCards.length})
-                    </span>
-                    <div className="relative flex-1 max-w-[180px]">
-                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3 text-muted-foreground" />
-                      <input
-                        type="text"
-                        placeholder="Search card..."
-                        value={cardSearchTerm}
-                        onChange={(e) => setCardSearchTerm(e.target.value)}
-                        className="w-full pl-7 pr-2 py-2 text-xs bg-secondary/50 rounded-lg outline-none border border-transparent focus:border-primary/30 transition-all"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar min-h-0">
-                    {deckCards.map((c) => (
-                      <DraggableCardItem
-                        key={c.id}
-                        card={c}
-                        isSelected={selectedCardId === c.id}
-                        onClick={() => handleSelectCard(c)}
-                        t={t}
-                        onDelete={deleteCard}
-                      />
-                    ))}
-                    {!deckCards.length && (
-                      <div className="py-20 flex flex-col items-center justify-center text-center bg-secondary/5 rounded-3xl border-2 border-dashed border-border/30">
-                        <Plus className="size-10 text-muted-foreground/20 mb-4" />
-                        <p className="text-sm font-bold text-muted-foreground">
-                          {t("editor.empty")}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <CardList
+                  cards={deckCards}
+                  selectedCardId={selectedCardId}
+                  onSelectCard={handleSelectCard}
+                  cardSearchTerm={cardSearchTerm}
+                  setCardSearchTerm={setCardSearchTerm}
+                  onDeleteCard={deleteCard}
+                  t={t}
+                />
               </div>
             </>
           ) : (
