@@ -52,7 +52,7 @@ export default function Login() {
       }
       
       navigate("/decks");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Auth error:", error);
       const message = error instanceof Error ? error.message : "Authentication failed. Check your connection and credentials.";
       toast.error(message);
