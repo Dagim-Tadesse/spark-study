@@ -11,9 +11,12 @@ const Help = () => {
   ];
 
   const shortcuts = [
-    { k: "F", v: "Flip current card" },
-    { k: "K / N", v: "Mark as Known / Next" },
-    { k: "R", v: "Review again" },
+    { k: "F or Space", v: "Flip card" },
+    { k: "1", v: "Again (retry)" },
+    { k: "2", v: "Hard (slower)" },
+    { k: "3", v: "Good (ideal)" },
+    { k: "4", v: "Easy (faster)" },
+    { k: "N", v: "Next card (skip)" },
     { k: "Esc", v: "End session" },
   ];
 

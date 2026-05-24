@@ -145,6 +145,12 @@ const Study = () => {
         } else if (k === "4") {
           e.preventDefault();
           markStudy(3);
+        } else if (k === "n") {
+          e.preventDefault();
+          if (currentCardIndex < sessionCards.length - 1) {
+            setFlipped(false);
+            setTimeout(() => setCurrentCardIndex((prev) => prev + 1), 300);
+          }
         }
       } else if (k === "escape") setIsStudying(false);
     };
