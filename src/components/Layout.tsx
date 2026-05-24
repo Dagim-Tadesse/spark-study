@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { LiveAnnouncer } from "../components/LiveAnnouncer";
+import FirstTimeTour from "./FirstTimeTour";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useI18n } from "@/contexts/I18nContext";
@@ -39,6 +41,14 @@ const Layout = ({ children }: LayoutProps) => {
     { name: t("nav.help") || "Help", path: "/help", icon: HelpCircle },
     { name: t("nav.about") || "About", path: "/about", icon: Info },
   ];
+
+  const [showTour, setShowTour] = useState<boolean>(() => {
+    try {
+      return !localStorage.getItem("spark_seen_tour");
+    } catch {
+      return false;
+    }
+  });
 
   return (
     <div className="mlfi-shell min-h-screen flex flex-col text-foreground">
@@ -100,7 +110,9 @@ const Layout = ({ children }: LayoutProps) => {
             </button>
           </div>
         </div>
-      </nav>
+            </nav>
+      <LiveAnnouncer />
+      <FirstTimeTour open={showTour} onClose={() => setShowTour(false)} />
 
       <main id="main-content" className="relative z-10 flex-1 w-full max-w-[1500px] mx-auto px-4 py-6 md:px-8 pb-24 md:pb-6">
         {children}

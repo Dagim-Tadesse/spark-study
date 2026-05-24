@@ -114,7 +114,12 @@ const Landing = () => {
               <p className="mt-5 max-w-lg text-base leading-relaxed text-muted-foreground sm:text-lg">
                 {t("landing.subheading")}
               </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              {/* Quick-start banner — HCI: low-friction onboarding cue */}
+              <div className="mt-6 inline-flex items-center gap-2 rounded-xl border border-primary/25 bg-primary/8 px-4 py-2 text-sm font-semibold text-primary">
+                <Zap className="size-4 shrink-0" />
+                <span>⚡ Start a deck in &lt; 30 seconds — try the demo, no account required</span>
+              </div>
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                 <Link
                   to={ctaTo}
                   className="group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-2xl bg-gradient-primary px-8 py-4 text-base font-black text-primary-foreground shadow-xl transition hover:-translate-y-1"

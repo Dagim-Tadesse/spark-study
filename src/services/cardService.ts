@@ -71,7 +71,7 @@ export const cardService = {
       return storage.updateItem<Card>('cards', id, updates) as Promise<Card>;
     }
 
-    const dbUpdates: any = { ...updates };
+    const dbUpdates: Record<string, unknown> = { ...updates };
     if (updates.next_review !== undefined) {
       dbUpdates.next_review = new Date(updates.next_review).toISOString();
     }

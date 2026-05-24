@@ -4,6 +4,7 @@ interface A11ySettings {
   colorBlind: boolean;
   largeText: boolean;
   reduceMotion: boolean;
+  highContrast: boolean;
 }
 
 interface A11yCtx extends A11ySettings {
@@ -13,7 +14,7 @@ interface A11yCtx extends A11ySettings {
 const Ctx = createContext<A11yCtx | undefined>(undefined);
 
 const KEY = "mlfi-a11y";
-const defaults: A11ySettings = { colorBlind: false, largeText: false, reduceMotion: false };
+const defaults: A11ySettings = { colorBlind: false, largeText: false, reduceMotion: false, highContrast: false };
 
 export const A11yProvider = ({ children }: { children: ReactNode }) => {
   const [s, setS] = useState<A11ySettings>(() => {
@@ -29,6 +30,7 @@ export const A11yProvider = ({ children }: { children: ReactNode }) => {
     root.classList.toggle("a11y-cb", s.colorBlind);
     root.classList.toggle("a11y-lg", s.largeText);
     root.classList.toggle("a11y-rm", s.reduceMotion);
+    root.classList.toggle("a11y-high-contrast", s.highContrast);
     localStorage.setItem(KEY, JSON.stringify(s));
   }, [s]);
 

@@ -16,6 +16,7 @@ import {
   FolderInput,
   Library,
   Clock,
+  Zap,
   Move,
   Play,
   ArrowLeft,
@@ -217,7 +218,7 @@ const Decks = () => {
 
   // Handle incoming actions from other pages
   useEffect(() => {
-    const state = (window.history.state as any)?.usr;
+    const state = (window.history.state as { usr?: { action?: string } } | null)?.usr;
     if (state?.action === "new-deck") {
       addDeck();
       // Clear state so it doesn't trigger again on refresh
@@ -325,7 +326,7 @@ const Decks = () => {
 
     pendingSaveRef.current = {
       id: selectedCardId,
-      updates: fullUpdates as any,
+      updates: fullUpdates as Partial<Card>,
     };
 
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
@@ -340,7 +341,8 @@ const Decks = () => {
           setAutosaveText("Saved");
           pendingSaveRef.current = null;
         }
-      } catch (e) {
+      } catch (e: unknown) {
+        console.error(e);
         setAutosaveText("Sync error");
       }
     }, 1000);
@@ -362,11 +364,12 @@ const Decks = () => {
       case "list":
         document.execCommand("insertUnorderedList");
         break;
-      case "header":
+      case "header": {
         const isH1 = document.queryCommandValue("formatBlock") === "h1";
         document.execCommand("formatBlock", false, isH1 ? "p" : "h1");
         break;
-      case "math":
+      }
+      case "math": {
         const math = window.prompt("Enter LaTeX math:", "e = mc^2");
         if (math)
           document.execCommand(
@@ -375,15 +378,17 @@ const Decks = () => {
             `<span class="math-tex text-orange-500 font-bold">$$ ${math} $$</span>`,
           );
         break;
+      }
       case "image-upload":
         triggerFileAction("image");
         return;
-      case "tts":
+      case "tts": {
         const selection = window.getSelection();
         const text = selection?.toString() || editor.innerText;
         const utterance = new SpeechSynthesisUtterance(text);
         window.speechSynthesis.speak(utterance);
         return;
+      }
     }
 
     handleUpdateContent({ [activeSide]: editor.innerHTML });
@@ -444,9 +449,10 @@ const Decks = () => {
       toast.success("Card created successfully!");
       setAutosaveText("Created");
       setShowAddCardDialog(false);
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("Add card failed:", e);
-      setAutosaveText("Error: " + (e.message || "Unknown error"));
+      const msg = e instanceof Error ? e.message : String(e);
+      setAutosaveText("Error: " + (msg || "Unknown error"));
     }
   };
 
@@ -732,14 +738,14 @@ const Decks = () => {
                       className="w-48 rounded-2xl p-2 shadow-xl border-border"
                     >
                       <DropdownMenuItem
-                        onClick={(e) => startEditingDeck(deck, e as any)}
+                        onClick={(e) => startEditingDeck(deck, e)}
                         className="rounded-xl font-bold p-3"
                       >
                         <Edit2 className="size-4 mr-3" /> Rename Deck
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         className="text-destructive rounded-xl font-bold p-3"
-                        onClick={(e) => confirmDeleteDeck(deck.id, e as any)}
+                        onClick={(e) => confirmDeleteDeck(deck.id, e)}
                       >
                         <Trash2 className="size-4 mr-3" /> Delete Deck
                       </DropdownMenuItem>

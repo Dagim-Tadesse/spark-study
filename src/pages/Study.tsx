@@ -9,6 +9,7 @@ import {
   RefreshCcw,
   Plus,
   Zap,
+  Copy,
   Clock,
   Volume2,
 } from "lucide-react";
@@ -22,6 +23,7 @@ import { profileService, Profile } from "../services/profileService";
 import { srsService, SRSGrade } from "../services/srsService";
 import { studyEventService } from "../services/studyEventService";
 import Layout from "../components/Layout";
+import ProgressDonut from "../components/ProgressDonut";
 import { cn } from "@/lib/utils";
 import { useI18n } from "../contexts/I18nContext";
 
@@ -456,6 +458,12 @@ const Study = () => {
               {currentCardIndex + 1} <span className="opacity-40">/</span>{" "}
               {sessionCards.length}
             </div>
+            <div className="hidden sm:block">
+              <ProgressDonut
+                percent={((currentCardIndex + 1) / Math.max(1, sessionCards.length)) * 100}
+                size={44}
+              />
+            </div>
           </div>
         </div>
 
@@ -533,6 +541,19 @@ const Study = () => {
                     title="Speak"
                   >
                     <Volume2 className="size-4 text-white" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const temp = document.createElement("div");
+                      temp.innerHTML = currentCard?.back || "";
+                      const text = temp.textContent || temp.innerText || "";
+                      navigator.clipboard?.writeText(text).catch(() => {});
+                    }}
+                    className="absolute bottom-8 right-16 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                    title="Copy"
+                  >
+                    <Copy className="size-4 text-white" />
                   </button>
                 </div>
               </div>

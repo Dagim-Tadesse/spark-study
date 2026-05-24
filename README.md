@@ -65,3 +65,11 @@ npm run dev
 - `src/contexts/`: Global state (Auth, i18n, Accessibility)
 - `src/services/`: Supabase data fetching services
 - `supabase/`: Database schemas and RLS policies
+
+## Assets
+
+This repo includes small "mini" GIFs used in UI demos and onboarding. Add any new GIFs under `public/assets/mini/` and reference them in the README or components as needed.
+
+Example:
+
+- `public/assets/mini/onboarding.gif` — quick tour animation (120x120)

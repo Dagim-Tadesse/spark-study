@@ -10,8 +10,8 @@ interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
   ready: boolean;
-  signIn: (email: string, password: string) => Promise<any>;
-  signUp: (email: string, password: string, name?: string) => Promise<any>;
+  signIn: (email: string, password: string) => Promise<unknown>;
+  signUp: (email: string, password: string, name?: string) => Promise<unknown>;
   signOut: () => Promise<void>;
   enableDemoMode: () => void;
 }

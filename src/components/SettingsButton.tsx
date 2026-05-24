@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ComponentType } from "react";
 import { Settings, X, Sun, Moon, Eye, Type, Languages, Sparkles } from "lucide-react";
 import { useA11y } from "@/contexts/A11yContext";
 import { useI18n } from "@/contexts/I18nContext";
@@ -85,6 +85,11 @@ export const SettingsButton = ({ darkMode, onToggleDark }: { darkMode: boolean; 
               <Row icon={Sparkles} title={t("settings.reduceMotion")}>
                 <Toggle on={a11y.reduceMotion} onChange={(v) => a11y.update({ reduceMotion: v })} />
               </Row>
+              
+              {/* High contrast */}
+              <Row icon={Eye} title={t("settings.highContrast") || "High contrast"} hint={t("settings.highContrastHint") || "Increase UI contrast"}>
+                <Toggle on={a11y.highContrast} onChange={(v) => a11y.update({ highContrast: v })} />
+              </Row>
             </div>
 
             <p className="mt-5 text-[11px] text-muted-foreground">
@@ -103,7 +108,7 @@ const Row = ({
   hint,
   children,
 }: {
-  icon: any;
+  icon: ComponentType<{ className?: string }>;
   title: string;
   hint?: string;
   children: React.ReactNode;

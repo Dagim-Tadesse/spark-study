@@ -218,3 +218,23 @@
   border-radius: 8px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: hsl(var(--primary) / 0.5); }
+
+/* High-contrast mode overrides */
+.a11y-high-contrast {
+  --background: 0 0% 100%;
+  --foreground: 222 35% 12%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 0%;
+  --primary: 210 40% 4%;
+  --primary-foreground: 0 0% 100%;
+  --border: 210 40% 12%;
+}
+.a11y-high-contrast.dark {
+  --background: 0 0% 0%;
+  --foreground: 210 40% 100%;
+  --card: 0 0% 6%;
+  --card-foreground: 210 40% 100%;
+  --primary: 210 40% 100%;
+  --primary-foreground: 0 0% 0%;
+  --border: 210 40% 20%;
+}

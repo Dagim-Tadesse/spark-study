@@ -1,0 +1,70 @@
+{
+  "decks": [
+    {
+      "name": "Biology - Cells and Genetics",
+      "tags": ["biology", "genetics"],
+      "cards": [
+        { "front": "What is the powerhouse of the cell?", "back": "Mitochondrion" },
+        { "front": "What molecule carries genetic information?", "back": "DNA" },
+        { "front": "What process makes RNA from DNA?", "back": "Transcription" },
+        { "front": "What process makes proteins from RNA?", "back": "Translation" },
+        { "front": "What part of the cell controls activities?", "back": "Nucleus" }
+      ]
+    },
+    {
+      "name": "Mathematics - Algebra and Calculus",
+      "tags": ["math", "algebra", "calculus"],
+      "cards": [
+        { "front": "Solve for x: 2x + 5 = 13", "back": "x = 4" },
+        { "front": "Derivative of x^2", "back": "2x" },
+        { "front": "Integral of 1/x", "back": "ln|x| + C" },
+        { "front": "Slope formula", "back": "(y2 - y1) / (x2 - x1)" },
+        { "front": "What is a function?", "back": "A relation where each input has exactly one output" }
+      ]
+    },
+    {
+      "name": "Physics - Motion and Energy",
+      "tags": ["physics", "motion"],
+      "cards": [
+        { "front": "Newton's first law", "back": "An object stays at rest or in motion unless acted on by a net force" },
+        { "front": "Formula for kinetic energy", "back": "1/2 mv^2" },
+        { "front": "Unit of force", "back": "Newton (N)" },
+        { "front": "What is acceleration?", "back": "Rate of change of velocity" },
+        { "front": "Potential energy depends on what?", "back": "Height and mass" }
+      ]
+    },
+    {
+      "name": "Chemistry - Atoms and Reactions",
+      "tags": ["chemistry", "atoms"],
+      "cards": [
+        { "front": "Smallest unit of an element", "back": "Atom" },
+        { "front": "Positive particle in the nucleus", "back": "Proton" },
+        { "front": "Negative particle in the nucleus?", "back": "Electron" },
+        { "front": "What is pH less than 7?", "back": "Acidic" },
+        { "front": "What is a chemical reaction?", "back": "A process that forms new substances" }
+      ]
+    },
+    {
+      "name": "History - Ethiopia and World Events",
+      "tags": ["history"],
+      "cards": [
+        { "front": "What is a primary source?", "back": "An original source from the time period" },
+        { "front": "What does chronology mean?", "back": "The order of events in time" },
+        { "front": "Why study history?", "back": "To understand the past and learn from it" },
+        { "front": "What is a revolution?", "back": "A major, often rapid, change in society or government" },
+        { "front": "What is oral history?", "back": "History passed down through spoken accounts" }
+      ]
+    },
+    {
+      "name": "Computer Science - Basics",
+      "tags": ["computer science", "programming"],
+      "cards": [
+        { "front": "What does CPU stand for?", "back": "Central Processing Unit" },
+        { "front": "What is an algorithm?", "back": "A step-by-step solution to a problem" },
+        { "front": "What is a variable?", "back": "A named storage for data" },
+        { "front": "What is debugging?", "back": "Finding and fixing errors in code" },
+        { "front": "What is a loop?", "back": "A way to repeat instructions" }
+      ]
+    }
+  ]
+}
